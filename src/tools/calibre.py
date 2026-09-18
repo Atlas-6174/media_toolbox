@@ -15,6 +15,7 @@ class CalibreTool(BaseTool):
     def convert(
         self, input_file: Path, output_file: Path, paper_size: str = "a4", output_profile: Optional[str] = None
     ) -> None:
+        output_file.parent.mkdir(parents=True, exist_ok=True)
         try:
             container_input = input_file.resolve().relative_to(settings.STORAGE_DIR.resolve())
         except ValueError:

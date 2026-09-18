@@ -25,6 +25,23 @@ settings = Settings()
 settings.INPUT_DIR.mkdir(parents=True, exist_ok=True)
 settings.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+STANDARD_SUBDIRS = [
+    "audios",
+    "videos",
+    "recortes",
+    "comprimidos",
+    "silenciados",
+    "capturas",
+    "gifs",
+    "imagenes",
+    "pdfs",
+    "zips",
+    "books",
+]
+for sub in STANDARD_SUBDIRS:
+    (settings.INPUT_DIR / sub).mkdir(parents=True, exist_ok=True)
+    (settings.OUTPUT_DIR / sub).mkdir(parents=True, exist_ok=True)
+
 
 def resolve_input_file(path_or_name: str, allowed_extensions: Optional[List[str]] = None, subfolder: str = "") -> Path:
     """

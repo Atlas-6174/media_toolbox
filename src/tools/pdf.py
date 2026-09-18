@@ -17,6 +17,7 @@ class PdfTool:
                 c_in = Path("input") / f.name
             args.append(str(c_in))
 
+        output_file.parent.mkdir(parents=True, exist_ok=True)
         try:
             c_out = output_file.resolve().relative_to(settings.STORAGE_DIR.resolve())
         except ValueError:

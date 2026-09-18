@@ -21,6 +21,7 @@ class FFmpegTool(BaseTool):
     SERVICE_NAME = "ffmpeg"
 
     def convert(self, input_file: Path, output_file: Path, **kwargs) -> None:
+        output_file.parent.mkdir(parents=True, exist_ok=True)
         try:
             container_input = input_file.resolve().relative_to(settings.STORAGE_DIR.resolve())
         except ValueError:
@@ -79,6 +80,7 @@ class FFmpegTool(BaseTool):
 
     def mute(self, input_file: Path, output_file: Path) -> None:
         """Silencia un video eliminando la pista de audio sin recodificar video."""
+        output_file.parent.mkdir(parents=True, exist_ok=True)
         try:
             container_input = input_file.resolve().relative_to(settings.STORAGE_DIR.resolve())
         except ValueError:
@@ -94,6 +96,7 @@ class FFmpegTool(BaseTool):
 
     def snapshot(self, input_file: Path, output_file: Path, tiempo: str = "00:00:01") -> None:
         """Extrae un fotograma en alta calidad en un segundo específico."""
+        output_file.parent.mkdir(parents=True, exist_ok=True)
         try:
             container_input = input_file.resolve().relative_to(settings.STORAGE_DIR.resolve())
         except ValueError:
@@ -104,5 +107,5 @@ class FFmpegTool(BaseTool):
         except ValueError:
             container_output = Path("output/capturas") / output_file.name
 
-        args = ["-y", "-ss", tiempo, "-i", str(container_input), "-vframes", "1", "-q:v", "2", str(container_output)]
+        args = ["-y", "-ss", tiempo, "-i", str(container_input), "-vframes", "1", "-update", "1", "-q:v", "2", str(container_output)]
         DockerRunner.run_service(self.SERVICE_NAME, args)

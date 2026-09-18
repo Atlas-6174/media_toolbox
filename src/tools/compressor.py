@@ -12,6 +12,7 @@ class VideoCompressorTool:
     SERVICE_NAME = "ffmpeg"
 
     def compress(self, input_file: Path, output_file: Path, perfil: str = "equilibrada") -> None:
+        output_file.parent.mkdir(parents=True, exist_ok=True)
         try:
             container_input = input_file.resolve().relative_to(settings.STORAGE_DIR.resolve())
         except ValueError:

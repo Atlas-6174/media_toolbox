@@ -1,3 +1,4 @@
+import mimetypes
 import os
 import shutil
 import uuid
@@ -484,7 +485,8 @@ async def download_output_file(subfolder: str, filename: str):
     file_path = settings.OUTPUT_DIR / subfolder / filename
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="Archivo no encontrado")
-    return FileResponse(path=str(file_path), filename=filename, media_type="application/octet-stream")
+    media_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+    return FileResponse(path=str(file_path), filename=filename, media_type=media_type)
 
 
 @app.get("/api/input-files/{subfolder}/{filename}")
@@ -492,7 +494,8 @@ async def download_input_file(subfolder: str, filename: str):
     file_path = settings.INPUT_DIR / subfolder / filename
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="Archivo no encontrado")
-    return FileResponse(path=str(file_path), filename=filename, media_type="application/octet-stream")
+    media_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+    return FileResponse(path=str(file_path), filename=filename, media_type=media_type)
 
 
 @app.post("/api/batch/convert")

@@ -9,6 +9,7 @@ class ImageTool:
     SERVICE_NAME = "ffmpeg"
 
     def convert(self, input_file: Path, output_file: Path, calidad: int = 80, ancho: Optional[int] = None) -> None:
+        output_file.parent.mkdir(parents=True, exist_ok=True)
         try:
             container_input = input_file.resolve().relative_to(settings.STORAGE_DIR.resolve())
         except ValueError:

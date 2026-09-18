@@ -16,6 +16,7 @@ class TrimmerTool:
         hasta: Optional[str] = None,
         duracion: Optional[str] = None,
     ) -> None:
+        output_file.parent.mkdir(parents=True, exist_ok=True)
         try:
             container_input = input_file.resolve().relative_to(settings.STORAGE_DIR.resolve())
         except ValueError:
