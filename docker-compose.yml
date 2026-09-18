@@ -27,6 +27,7 @@ services:
     user: "${UID:-1000}:${GID:-1000}"
     volumes:
       - ${HOST_STORAGE_PATH:-./storage}:/workspace
+      - ${HOST_STORAGE_PATH:-./storage}:/downloads
     working_dir: /workspace
 
   pdf:
