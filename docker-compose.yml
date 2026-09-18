@@ -6,7 +6,7 @@ services:
     image: local/toolbox-calibre:latest
     user: "${UID:-1000}:${GID:-1000}"
     volumes:
-      - ./storage:/workspace
+      - ${HOST_STORAGE_PATH:-./storage}:/workspace
     working_dir: /workspace
     network_mode: none
     stdin_open: false
@@ -16,7 +16,7 @@ services:
     image: jrottenberg/ffmpeg:latest
     user: "${UID:-1000}:${GID:-1000}"
     volumes:
-      - ./storage:/workspace
+      - ${HOST_STORAGE_PATH:-./storage}:/workspace
     working_dir: /workspace
     network_mode: none
     stdin_open: false
@@ -26,14 +26,14 @@ services:
     image: jauderho/yt-dlp:latest
     user: "${UID:-1000}:${GID:-1000}"
     volumes:
-      - ./storage:/workspace
+      - ${HOST_STORAGE_PATH:-./storage}:/workspace
     working_dir: /workspace
 
   pdf:
     image: local/toolbox-calibre:latest
     user: "${UID:-1000}:${GID:-1000}"
     volumes:
-      - ./storage:/workspace
+      - ${HOST_STORAGE_PATH:-./storage}:/workspace
     working_dir: /workspace
     network_mode: none
     entrypoint: ["pdfunite"]
@@ -53,6 +53,8 @@ services:
     environment:
       - UID=${UID:-1000}
       - GID=${GID:-1000}
+      - HOST_STORAGE_PATH=${HOST_STORAGE_PATH:-${PWD}/storage}
+      - COMPOSE_PROJECT_NAME=media-toolbox
     restart: unless-stopped
 
 
