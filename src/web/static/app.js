@@ -1,9 +1,38 @@
-// Inicializar iconos de Lucide
+// Inicializar componentes al cargar
 document.addEventListener("DOMContentLoaded", () => {
+  initTheme();
   lucide.createIcons();
   checkDockerStatus();
   initDropzones();
 });
+
+// GESTIÓN DE TEMA (CLARO / OSCURO)
+function initTheme() {
+  const saved = localStorage.getItem("theme");
+  const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const isDark = saved ? saved === "dark" : prefersDark;
+  applyTheme(isDark);
+}
+
+function toggleTheme() {
+  const isDark = document.documentElement.classList.contains("dark");
+  applyTheme(!isDark);
+}
+
+function applyTheme(isDark) {
+  if (isDark) {
+    document.documentElement.classList.add("dark");
+    localStorage.setItem("theme", "dark");
+  } else {
+    document.documentElement.classList.remove("dark");
+    localStorage.setItem("theme", "light");
+  }
+  const icon = document.getElementById("theme-icon");
+  if (icon) {
+    icon.setAttribute("data-lucide", isDark ? "sun" : "moon");
+    lucide.createIcons();
+  }
+}
 
 // Chequeo de estado de Docker
 async function checkDockerStatus() {
@@ -12,12 +41,12 @@ async function checkDockerStatus() {
     const res = await fetch("/api/status");
     const data = await res.json();
     if (data.docker) {
-      badge.innerHTML = \`<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span class="text-emerald-300">Docker Activo</span>\`;
+      badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span class="text-emerald-600 dark:text-emerald-300 font-medium">Docker Activo</span>`;
     } else {
-      badge.innerHTML = \`<span class="w-2 h-2 rounded-full bg-rose-500"></span><span class="text-rose-300 font-semibold">Docker Desconectado</span>\`;
+      badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span><span class="text-rose-600 dark:text-rose-300 font-semibold">Docker Desconectado</span>`;
     }
   } catch {
-    badge.innerHTML = \`<span class="w-2 h-2 rounded-full bg-rose-500"></span><span class="text-rose-300">Sin conexión</span>\`;
+    badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span><span class="text-rose-600 dark:text-rose-300">Sin conexión</span>`;
   }
 }
 
@@ -26,14 +55,14 @@ function switchTab(tabId) {
   document.querySelectorAll(".tab-panel").forEach(p => p.classList.add("hidden"));
   document.querySelectorAll(".tab-btn").forEach(b => {
     b.classList.remove("bg-indigo-600", "text-white", "shadow-lg", "shadow-indigo-600/20");
-    b.classList.add("text-slate-400");
+    b.classList.add("text-slate-500", "dark:text-slate-400");
   });
 
   const activePanel = document.getElementById(`panel-${tabId}`);
   const activeBtn = document.getElementById(`tab-${tabId}`);
   if (activePanel && activeBtn) {
     activePanel.classList.remove("hidden");
-    activeBtn.classList.remove("text-slate-400");
+    activeBtn.classList.remove("text-slate-500", "dark:text-slate-400");
     activeBtn.classList.add("bg-indigo-600", "text-white", "shadow-lg", "shadow-indigo-600/20");
   }
   lucide.createIcons();
@@ -43,26 +72,37 @@ function switchTab(tabId) {
 function switchVideoSubtab(subId) {
   document.querySelectorAll(".vpanel").forEach(p => p.classList.add("hidden"));
   document.querySelectorAll(".vsub-btn").forEach(b => {
-    b.classList.remove("bg-indigo-600/20", "text-indigo-400", "border", "border-indigo-500/30");
-    b.classList.add("text-slate-400");
+    b.classList.remove("bg-indigo-600/10", "dark:bg-indigo-600/20", "text-indigo-600", "dark:text-indigo-400", "border", "border-indigo-500/20", "dark:border-indigo-500/30");
+    b.classList.add("text-slate-500", "dark:text-slate-400");
   });
 
   const activeVpanel = document.getElementById(`vpanel-${subId}`);
   const activeVbtn = document.getElementById(`vsub-${subId}`);
   if (activeVpanel && activeVbtn) {
     activeVpanel.classList.remove("hidden");
-    activeVbtn.classList.remove("text-slate-400");
-    activeVbtn.classList.add("bg-indigo-600/20", "text-indigo-400", "border", "border-indigo-500/30");
+    activeVbtn.classList.remove("text-slate-500", "dark:text-slate-400");
+    activeVbtn.classList.add("bg-indigo-600/10", "dark:bg-indigo-600/20", "text-indigo-600", "dark:text-indigo-400", "border", "border-indigo-500/20", "dark:border-indigo-500/30");
   }
   lucide.createIcons();
 }
 
-// Gestión universal de Dropzones
+// Presets rápidos para compresión
+function setCompressPreset(preset) {
+  const select = document.getElementById("compress-profile");
+  if (select) {
+    select.value = preset;
+    // Destello sutil en el select para dar feedback
+    select.classList.add("ring-2", "ring-indigo-500");
+    setTimeout(() => select.classList.remove("ring-2", "ring-indigo-500"), 500);
+  }
+}
+
+// GESTIÓN UNIVERSAL DE DROPZONES
 function initDropzones() {
-  setupDropzone("dropzone-audio", "file-audio", "selected-audio");
-  setupDropzone("dropzone-video", "file-video", "selected-video");
+  setupMultipleDropzone("dropzone-audio", "file-audio", "selected-audio");
+  setupMultipleDropzone("dropzone-video", "file-video", "selected-video");
   setupDropzone("dropzone-book", "file-book", "selected-book");
-  setupDropzone("dropzone-image", "file-image", "selected-image");
+  setupMultipleDropzone("dropzone-image", "file-image", "selected-image");
   setupMultipleDropzone("dropzone-pdf", "files-pdf", "selected-pdfs");
 }
 
@@ -125,16 +165,25 @@ function renderMultipleBadges(files, container) {
   container.innerHTML = "";
   container.classList.remove("hidden");
   container.classList.add("flex");
-  Array.from(files).forEach(f => {
-    const badge = document.createElement("span");
-    badge.className = "inline-flex items-center gap-1.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs px-2.5 py-1 rounded-lg";
-    badge.innerHTML = `<i data-lucide="file" class="w-3 h-3"></i> ${f.name}`;
-    container.appendChild(badge);
-  });
+
+  if (files.length > 3) {
+    const totalMb = (Array.from(files).reduce((acc, f) => acc + f.size, 0) / (1024 * 1024)).toFixed(1);
+    const summaryBadge = document.createElement("span");
+    summaryBadge.className = "inline-flex items-center gap-1.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-300 text-xs px-3 py-1 rounded-lg font-semibold";
+    summaryBadge.innerHTML = `<i data-lucide="layers" class="w-3.5 h-3.5"></i> Lote: ${files.length} archivos (${totalMb} MB total)`;
+    container.appendChild(summaryBadge);
+  } else {
+    Array.from(files).forEach(f => {
+      const badge = document.createElement("span");
+      badge.className = "inline-flex items-center gap-1.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-300 text-xs px-2.5 py-1 rounded-lg";
+      badge.innerHTML = `<i data-lucide="file" class="w-3 h-3"></i> ${f.name}`;
+      container.appendChild(badge);
+    });
+  }
   lucide.createIcons();
 }
 
-// Seguimiento visual de tareas en tiempo real
+// SEGUIMIENTO VISUAL DE TAREAS INDIVIDUALES
 function startTaskMonitoring(taskId, previewType = "generic") {
   const box = document.getElementById("task-feedback");
   const msg = document.getElementById("task-message");
@@ -143,13 +192,16 @@ function startTaskMonitoring(taskId, previewType = "generic") {
   const resultBox = document.getElementById("result-box");
   const previewContainer = document.getElementById("preview-container");
   const downloadLink = document.getElementById("download-link");
+  const batchZipLink = document.getElementById("batch-zip-link");
 
   box.classList.remove("hidden");
   resultBox.classList.add("hidden");
+  batchZipLink.classList.add("hidden");
+  downloadLink.classList.remove("hidden");
   previewContainer.innerHTML = "";
   bar.style.width = "5%";
   percent.innerText = "5%";
-  msg.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin text-indigo-400"></i> Iniciando micro-contenedor...`;
+  msg.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin text-indigo-500"></i> Iniciando contenedor...`;
   lucide.createIcons();
 
   const interval = setInterval(async () => {
@@ -161,22 +213,21 @@ function startTaskMonitoring(taskId, previewType = "generic") {
         const pct = data.progress || 25;
         bar.style.width = `${pct}%`;
         percent.innerText = `${pct}%`;
-        msg.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin text-indigo-400"></i> ${data.message}`;
+        msg.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin text-indigo-500"></i> ${data.message}`;
         lucide.createIcons();
       } else if (data.status === "done") {
         clearInterval(interval);
         bar.style.width = "100%";
         percent.innerText = "100%";
-        msg.innerHTML = `<i data-lucide="check" class="w-4 h-4 text-emerald-400"></i> ${data.message}`;
+        msg.innerHTML = `<i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> ${data.message}`;
         downloadLink.href = data.download_url;
         downloadLink.setAttribute("download", data.filename);
 
-        // Previsualización interactiva
         if (data.preview_url) {
           if (previewType === "audio") {
             previewContainer.innerHTML = `<audio controls class="w-full mt-2 rounded-xl" src="${data.preview_url}"></audio>`;
           } else if (previewType === "image" || previewType === "gif") {
-            previewContainer.innerHTML = `<img src="${data.preview_url}" class="max-h-64 mx-auto rounded-xl border border-slate-700 shadow-lg object-contain">`;
+            previewContainer.innerHTML = `<img src="${data.preview_url}" class="max-h-64 mx-auto rounded-xl border border-slate-300 dark:border-slate-700 shadow-lg object-contain">`;
           }
         }
 
@@ -186,7 +237,7 @@ function startTaskMonitoring(taskId, previewType = "generic") {
         clearInterval(interval);
         bar.style.width = "100%";
         bar.classList.add("bg-rose-500");
-        msg.innerHTML = `<i data-lucide="alert-circle" class="w-4 h-4 text-rose-400"></i> Falló: ${data.message}`;
+        msg.innerHTML = `<i data-lucide="alert-circle" class="w-4 h-4 text-rose-500"></i> Falló: ${data.message}`;
         lucide.createIcons();
       }
     } catch {
@@ -195,29 +246,114 @@ function startTaskMonitoring(taskId, previewType = "generic") {
   }, 600);
 }
 
-// ACCIONES DE PROCESAMIENTO
-async function processAudio() {
-  const file = document.getElementById("file-audio").files[0];
-  if (!file) return alert("Por favor selecciona o arrastra un video primero.");
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("formato", document.getElementById("format-audio").value);
+// SEGUIMIENTO VISUAL DE LOTES (BATCH)
+function startBatchMonitoring(batchId) {
+  const box = document.getElementById("task-feedback");
+  const msg = document.getElementById("task-message");
+  const percent = document.getElementById("task-percent");
+  const bar = document.getElementById("task-bar");
+  const resultBox = document.getElementById("result-box");
+  const previewContainer = document.getElementById("preview-container");
+  const downloadLink = document.getElementById("download-link");
+  const batchZipLink = document.getElementById("batch-zip-link");
 
-  const res = await fetch("/api/audio", { method: "POST", body: formData });
-  const data = await res.json();
-  startTaskMonitoring(data.task_id, "audio");
+  box.classList.remove("hidden");
+  resultBox.classList.add("hidden");
+  downloadLink.classList.add("hidden");
+  batchZipLink.classList.remove("hidden");
+  previewContainer.innerHTML = "";
+  bar.style.width = "5%";
+  percent.innerText = "5%";
+  msg.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin text-indigo-500"></i> Procesando lote...`;
+  lucide.createIcons();
+
+  const interval = setInterval(async () => {
+    try {
+      const res = await fetch(`/api/batch/${batchId}`);
+      const data = await res.json();
+
+      bar.style.width = `${data.percent}%`;
+      percent.innerText = `${data.percent}%`;
+      msg.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin text-indigo-500"></i> Lote: ${data.completed} de ${data.total} procesados (${data.percent}%)`;
+      lucide.createIcons();
+
+      if (data.status === "done") {
+        clearInterval(interval);
+        bar.style.width = "100%";
+        percent.innerText = "100%";
+        msg.innerHTML = `<i data-lucide="check-check" class="w-4 h-4 text-emerald-500"></i> ¡Lote de ${data.total} archivos completado!`;
+        batchZipLink.href = data.download_zip;
+        batchZipLink.setAttribute("download", `mediabox_lote_${batchId.slice(0, 8)}.zip`);
+        resultBox.classList.remove("hidden");
+        lucide.createIcons();
+      }
+    } catch {
+      clearInterval(interval);
+    }
+  }, 800);
+}
+
+// ACCIONES DE PROCESAMIENTO
+
+async function processAudio() {
+  const input = document.getElementById("file-audio");
+  const files = input.files;
+  if (!files || !files.length) return alert("Por favor selecciona o arrastra al menos un video.");
+
+  const formato = document.getElementById("format-audio").value;
+  const normalizar = document.getElementById("audio-normalize").checked;
+
+  if (files.length > 1) {
+    // Procesamiento por lotes
+    const formData = new FormData();
+    formData.append("tipo", "audio");
+    formData.append("formato", formato);
+    formData.append("normalizar", normalizar);
+    Array.from(files).forEach(f => formData.append("files", f));
+
+    const res = await fetch("/api/batch/convert", { method: "POST", body: formData });
+    const data = await res.json();
+    startBatchMonitoring(data.batch_id);
+  } else {
+    // Archivo individual
+    const formData = new FormData();
+    formData.append("file", files[0]);
+    formData.append("formato", formato);
+    formData.append("normalizar", normalizar);
+
+    const res = await fetch("/api/audio", { method: "POST", body: formData });
+    const data = await res.json();
+    startTaskMonitoring(data.task_id, "audio");
+  }
 }
 
 async function processCompress() {
-  const file = document.getElementById("file-video").files[0];
-  if (!file) return alert("Por favor selecciona o arrastra un video primero.");
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("perfil", document.getElementById("compress-profile").value);
+  const input = document.getElementById("file-video");
+  const files = input.files;
+  if (!files || !files.length) return alert("Por favor selecciona o arrastra al menos un video.");
 
-  const res = await fetch("/api/compress", { method: "POST", body: formData });
-  const data = await res.json();
-  startTaskMonitoring(data.task_id, "video");
+  const perfil = document.getElementById("compress-profile").value;
+
+  if (files.length > 1) {
+    // Procesamiento por lotes
+    const formData = new FormData();
+    formData.append("tipo", "compress");
+    formData.append("perfil", perfil);
+    Array.from(files).forEach(f => formData.append("files", f));
+
+    const res = await fetch("/api/batch/convert", { method: "POST", body: formData });
+    const data = await res.json();
+    startBatchMonitoring(data.batch_id);
+  } else {
+    // Archivo individual
+    const formData = new FormData();
+    formData.append("file", files[0]);
+    formData.append("perfil", perfil);
+
+    const res = await fetch("/api/compress", { method: "POST", body: formData });
+    const data = await res.json();
+    startTaskMonitoring(data.task_id, "video");
+  }
 }
 
 async function processTrim() {
@@ -310,16 +446,35 @@ async function processPdfMerge() {
 }
 
 async function processImage() {
-  const file = document.getElementById("file-image").files[0];
-  if (!file) return alert("Por favor selecciona o arrastra una imagen primero.");
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("formato", document.getElementById("img-format").value);
-  formData.append("calidad", document.getElementById("img-quality").value);
-  const width = document.getElementById("img-width").value;
-  if (width) formData.append("ancho", width);
+  const input = document.getElementById("file-image");
+  const files = input.files;
+  if (!files || !files.length) return alert("Por favor selecciona o arrastra al menos una imagen.");
 
-  const res = await fetch("/api/image", { method: "POST", body: formData });
-  const data = await res.json();
-  startTaskMonitoring(data.task_id, "image");
+  const formato = document.getElementById("img-format").value;
+  const calidad = document.getElementById("img-quality").value;
+  const width = document.getElementById("img-width").value;
+
+  if (files.length > 1) {
+    // Procesamiento por lotes
+    const formData = new FormData();
+    formData.append("tipo", "image");
+    formData.append("formato", formato);
+    formData.append("calidad", calidad);
+    Array.from(files).forEach(f => formData.append("files", f));
+
+    const res = await fetch("/api/batch/convert", { method: "POST", body: formData });
+    const data = await res.json();
+    startBatchMonitoring(data.batch_id);
+  } else {
+    // Archivo individual
+    const formData = new FormData();
+    formData.append("file", files[0]);
+    formData.append("formato", formato);
+    formData.append("calidad", calidad);
+    if (width) formData.append("ancho", width);
+
+    const res = await fetch("/api/image", { method: "POST", body: formData });
+    const data = await res.json();
+    startTaskMonitoring(data.task_id, "image");
+  }
 }

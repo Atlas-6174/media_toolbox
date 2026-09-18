@@ -22,6 +22,7 @@ class VideoCompressorTool:
         except ValueError:
             container_output = Path("output/comprimidos") / output_file.name
 
+        audio_bitrate = "128k"
         if perfil == "ligera":
             crf = "20"
             preset = "slow"
@@ -30,6 +31,15 @@ class VideoCompressorTool:
             crf = "30"
             preset = "faster"
             extra_vf = ["-vf", "scale=-2:720"]
+        elif perfil == "whatsapp":
+            crf = "32"
+            preset = "faster"
+            extra_vf = ["-vf", "scale=-2:480"]
+            audio_bitrate = "96k"
+        elif perfil in ["vertical_reels", "reels", "tiktok"]:
+            crf = "24"
+            preset = "medium"
+            extra_vf = ["-vf", "crop=ih*9/16:ih,scale=1080:1920"]
         else:  # equilibrada
             crf = "25"
             preset = "medium"
@@ -49,7 +59,7 @@ class VideoCompressorTool:
             "-c:a",
             "aac",
             "-b:a",
-            "128k",
+            audio_bitrate,
             "-progress",
             "pipe:1",
             "-nostats",

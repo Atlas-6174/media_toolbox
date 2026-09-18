@@ -1,6 +1,7 @@
 import os
 import shutil
 import uuid
+import zipfile
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -50,8 +51,9 @@ STATIC_DIR = BASE_DIR / "static"
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
-# Estado de tareas en memoria
+# Estado de tareas y lotes en memoria
 tasks: Dict[str, dict] = {}
+batches: Dict[str, dict] = {}
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -147,7 +149,12 @@ async def convert_book(
 
 
 @app.post("/api/audio")
-async def extract_audio(background_tasks: BackgroundTasks, file: UploadFile = File(...), formato: str = Form("mp3")):
+async def extract_audio(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    formato: str = Form("mp3"),
+    normalizar: bool = Form(False),
+):
     task_id = str(uuid.uuid4())
     in_dir = settings.INPUT_DIR / "videos"
     out_dir = settings.OUTPUT_DIR / "audios"
@@ -164,7 +171,7 @@ async def extract_audio(background_tasks: BackgroundTasks, file: UploadFile = Fi
 
     def run():
         try:
-            FFmpegTool().convert(input_path, output_path)
+            FFmpegTool().convert(input_path, output_path, normalizar=normalizar)
             tasks[task_id] = {
                 "status": "done",
                 "progress": 100,
@@ -486,6 +493,116 @@ async def download_input_file(subfolder: str, filename: str):
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="Archivo no encontrado")
     return FileResponse(path=str(file_path), filename=filename, media_type="application/octet-stream")
+
+
+@app.post("/api/batch/convert")
+async def batch_convert(
+    background_tasks: BackgroundTasks,
+    files: List[UploadFile] = File(...),
+    tipo: str = Form(...),
+    formato: Optional[str] = Form(None),
+    perfil: Optional[str] = Form(None),
+    normalizar: bool = Form(False),
+    calidad: Optional[int] = Form(80),
+):
+    if not files:
+        raise HTTPException(status_code=400, detail="No se enviaron archivos")
+
+    batch_id = str(uuid.uuid4())
+    batches[batch_id] = {
+        "id": batch_id,
+        "status": "running",
+        "tipo": tipo,
+        "total": len(files),
+        "completed": 0,
+        "failed": 0,
+        "output_files": [],
+        "zip_path": None,
+    }
+
+    file_records = []
+    for f in files:
+        sub = "videos" if tipo in ["audio", "compress"] else "imagenes"
+        in_dir = settings.INPUT_DIR / sub
+        in_dir.mkdir(parents=True, exist_ok=True)
+        in_path = in_dir / f.filename
+        with open(in_path, "wb") as buf:
+            shutil.copyfileobj(f.file, buf)
+        file_records.append((f.filename, in_path))
+
+    def run_batch():
+        out_files = []
+        for _, in_path in file_records:
+            try:
+                if tipo == "audio":
+                    fmt = (formato or "mp3").lstrip(".").lower()
+                    out_dir = settings.OUTPUT_DIR / "audios"
+                    out_dir.mkdir(parents=True, exist_ok=True)
+                    out_path = out_dir / f"{in_path.stem}.{fmt}"
+                    FFmpegTool().convert(in_path, out_path, normalizar=normalizar)
+                    out_files.append(out_path)
+                elif tipo == "compress":
+                    prf = perfil or "equilibrada"
+                    out_dir = settings.OUTPUT_DIR / "comprimidos"
+                    out_dir.mkdir(parents=True, exist_ok=True)
+                    out_path = out_dir / f"{in_path.stem}_comprimido.mp4"
+                    VideoCompressorTool().compress(in_path, out_path, perfil=prf)
+                    out_files.append(out_path)
+                elif tipo == "image":
+                    fmt = (formato or "webp").lstrip(".").lower()
+                    out_dir = settings.OUTPUT_DIR / "imagenes"
+                    out_dir.mkdir(parents=True, exist_ok=True)
+                    out_path = out_dir / f"{in_path.stem}.{fmt}"
+                    ImageTool().convert(in_path, out_path, calidad=calidad or 80)
+                    out_files.append(out_path)
+                batches[batch_id]["completed"] += 1
+            except Exception:
+                batches[batch_id]["failed"] += 1
+
+        zip_dir = settings.OUTPUT_DIR / "zips"
+        zip_dir.mkdir(parents=True, exist_ok=True)
+        zip_path = zip_dir / f"mediabox_lote_{batch_id[:8]}.zip"
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+            for op in out_files:
+                if op.exists():
+                    zf.write(op, arcname=op.name)
+
+        batches[batch_id]["output_files"] = [str(p) for p in out_files]
+        batches[batch_id]["zip_path"] = str(zip_path)
+        batches[batch_id]["status"] = "done"
+        batches[batch_id]["download_zip"] = f"/api/batch/download/{batch_id}"
+
+    background_tasks.add_task(run_batch)
+    return {"batch_id": batch_id, "total": len(files)}
+
+
+@app.get("/api/batch/{batch_id}")
+async def get_batch_status(batch_id: str):
+    if batch_id not in batches:
+        raise HTTPException(status_code=404, detail="Lote no encontrado")
+    b = batches[batch_id]
+    total = b["total"]
+    done_count = b["completed"] + b["failed"]
+    percent = int((done_count / total) * 100) if total > 0 else 100
+    return {
+        "id": batch_id,
+        "status": b["status"],
+        "total": total,
+        "completed": b["completed"],
+        "failed": b["failed"],
+        "percent": percent,
+        "download_zip": b.get("download_zip"),
+    }
+
+
+@app.get("/api/batch/download/{batch_id}")
+async def download_batch_zip(batch_id: str):
+    if batch_id not in batches or not batches[batch_id].get("zip_path"):
+        raise HTTPException(status_code=404, detail="Lote o ZIP no encontrado")
+    zip_path = Path(batches[batch_id]["zip_path"])
+    if not zip_path.exists():
+        raise HTTPException(status_code=404, detail="Archivo ZIP no existe")
+    return FileResponse(path=str(zip_path), filename=zip_path.name, media_type="application/zip")
 
 
 @app.post("/api/cleanup")

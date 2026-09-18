@@ -32,15 +32,18 @@ class FFmpegTool(BaseTool):
             container_output = Path("output/audios") / output_file.name
 
         ext = output_file.suffix.lower()
+        normalizar = kwargs.get("normalizar", False)
+        filter_args = ["-af", "loudnorm=I=-16:TP=-1.5:LRA=11"] if normalizar else []
+
         codec_args = []
         if ext == ".mp3":
-            codec_args = ["-q:a", "0", "-map", "a"]
+            codec_args = [*filter_args, "-q:a", "0", "-map", "a"]
         elif ext == ".wav":
-            codec_args = ["-vn"]
+            codec_args = [*filter_args, "-vn"]
         elif ext in [".m4a", ".aac"]:
-            codec_args = ["-c:a", "aac", "-b:a", "256k", "-vn"]
+            codec_args = [*filter_args, "-c:a", "aac", "-b:a", "256k", "-vn"]
         else:
-            codec_args = ["-q:a", "0", "-map", "a"]
+            codec_args = [*filter_args, "-q:a", "0", "-map", "a"]
 
         args = ["-y", "-i", str(container_input), *codec_args, "-progress", "pipe:1", "-nostats", str(container_output)]
 
