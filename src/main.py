@@ -486,7 +486,7 @@ def iniciar_web(
             f"[bold green]🚀 Iniciando MediaBox Web en [underline]{url}[/underline][/bold green]\n\n"
             "[dim]Presiona Ctrl+C para detener el servidor.[/dim]",
             title="[bold cyan]MediaBox UI[/bold cyan]",
-            border_style="indigo",
+            border_style="#6366f1",
         )
     )
 
