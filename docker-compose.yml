@@ -46,7 +46,9 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./storage:/workspace
+      - ./storage:/app/storage
+      - ./src:/app/src
+      - ./docker-compose.yml:/app/docker-compose.yml
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - UID=${UID:-1000}
