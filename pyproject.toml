@@ -32,8 +32,9 @@ dev = [
 ]
 
 [project.scripts]
-tb = "src.main:app"
+media = "src.main:app"
 toolbox = "src.main:app"
+tb = "src.main:app"
 
 [build-system]
 requires = ["setuptools>=61.0"]

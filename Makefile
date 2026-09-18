@@ -26,31 +26,31 @@ build:
 install:
 	@echo "🐍 Instalando dependencias de Python..."
 	pip install -e .
-	@echo "✅ Listo. Puedes usar 'tb' en tu terminal."
+	@echo "✅ Listo. Puedes usar 'media' en tu terminal."
 
 estado:
-	tb estado
+	media estado
 
 epub:
-	tb convertir
+	media convertir
 
 audio:
-	tb audio
+	media audio
 
 descargar:
-	tb descargar
+	media descargar
 
 recortar:
-	tb recortar
+	media recortar
 
 gif:
-	tb gif
+	media gif
 
 comprimir:
-	tb comprimir
+	media comprimir
 
 imagen:
-	tb imagen
+	media imagen
 
 test:
 	pytest tests/ -v
