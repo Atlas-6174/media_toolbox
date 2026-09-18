@@ -28,6 +28,9 @@ install:
 	pip install -e .
 	@echo "✅ Listo. Puedes usar 'media' en tu terminal."
 
+web:
+	media web
+
 estado:
 	media estado
 

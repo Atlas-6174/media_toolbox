@@ -465,5 +465,63 @@ def mostrar_estado():
         console.print("[dim]No fue posible consultar imágenes de Docker.[/dim]")
 
 
+# ---------------------------------------------------------
+# 10. INTERFAZ WEB (media web)
+# ---------------------------------------------------------
+@app.command(name="web", short_help="Inicia la interfaz gráfica web en el navegador")
+def iniciar_web(
+    ctx: typer.Context,
+    port: int = typer.Option(8000, "--port", "-p", help="Puerto HTTP"),
+    no_browser: bool = typer.Option(False, "--no-browser", help="No abrir automáticamente el navegador"),
+    local: bool = typer.Option(False, "--local", help="Ejecutar servidor localmente sin contenedor Docker"),
+):
+    import webbrowser
+
+    from src.core.docker_runner import is_docker_running
+
+    url = f"http://localhost:{port}"
+
+    console.print(
+        Panel(
+            f"[bold green]🚀 Iniciando MediaBox Web en [underline]{url}[/underline][/bold green]\n\n"
+            "[dim]Presiona Ctrl+C para detener el servidor.[/dim]",
+            title="[bold cyan]MediaBox UI[/bold cyan]",
+            border_style="indigo",
+        )
+    )
+
+    if not no_browser:
+        webbrowser.open(url)
+
+    if not local and is_docker_running():
+        import subprocess
+
+        cmd = [
+            "docker",
+            "compose",
+            "-f",
+            str(settings.DOCKER_COMPOSE_FILE),
+            "up",
+            "web",
+        ]
+        try:
+            subprocess.run(cmd, cwd=str(settings.BASE_DIR))
+        except KeyboardInterrupt:
+            console.print("\n[yellow]Deteniendo servicio web de Docker...[/yellow]")
+            subprocess.run(
+                ["docker", "compose", "-f", str(settings.DOCKER_COMPOSE_FILE), "stop", "web"],
+                cwd=str(settings.BASE_DIR),
+            )
+    else:
+        try:
+            import uvicorn
+
+            uvicorn.run("src.web.app:app", host="0.0.0.0", port=port, log_level="info")
+        except ImportError:
+            console.print(
+                "[red]Para ejecutar en modo local sin Docker, instala uvicorn y fastapi: pip install -e '.[web]'[/red]"
+            )
+
+
 if __name__ == "__main__":
     app()

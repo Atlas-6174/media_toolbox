@@ -38,3 +38,19 @@ services:
     network_mode: none
     entrypoint: ["pdfunite"]
 
+  web:
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
+    image: local/toolbox-web:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./storage:/workspace
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - UID=${UID:-1000}
+      - GID=${GID:-1000}
+    restart: unless-stopped
+
+

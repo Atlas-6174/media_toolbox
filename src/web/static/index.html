@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediaBox - Suite Multimedia</title>
+  <link rel="manifest" href="/static/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/static/icon.svg">
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: "#eef2ff",
+              500: "#6366f1",
+              600: "#4f46e5",
+              700: "#4338ca",
+              900: "#1e1b4b",
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    .dropzone-active { border-color: #6366f1 !important; background-color: rgba(99, 102, 241, 0.08) !important; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- HEADER -->
+  <header class="border-b border-slate-800/80 bg-slate-900/50 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+          <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg leading-tight tracking-tight flex items-center gap-2">
+            MediaBox <span class="text-xs bg-indigo-500/20 text-indigo-400 font-medium px-2 py-0.5 rounded-full border border-indigo-500/30">Local GUI</span>
+          </h1>
+          <p class="text-xs text-slate-400">Micro-contenedores multimedia aislados</p>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-4">
+        <div id="docker-status" class="flex items-center gap-2 text-xs bg-slate-800/80 border border-slate-700/60 px-3 py-1.5 rounded-full">
+          <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+          <span class="text-slate-300">Conectando...</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-8">
+
+    <!-- TABS NAVIGATION -->
+    <div class="flex flex-wrap gap-2 border-b border-slate-800 pb-4 mb-8">
+      <button onclick="switchTab('audio')" id="tab-audio" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition bg-indigo-600 text-white shadow-lg shadow-indigo-600/20">
+        <i data-lucide="music" class="w-4 h-4"></i> Extraer Audio
+      </button>
+      <button onclick="switchTab('video')" id="tab-video" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition text-slate-400 hover:text-white hover:bg-slate-800">
+        <i data-lucide="video" class="w-4 h-4"></i> Video
+      </button>
+      <button onclick="switchTab('download')" id="tab-download" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition text-slate-400 hover:text-white hover:bg-slate-800">
+        <i data-lucide="download-cloud" class="w-4 h-4"></i> Descargar URL
+      </button>
+      <button onclick="switchTab('books')" id="tab-books" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition text-slate-400 hover:text-white hover:bg-slate-800">
+        <i data-lucide="book-open" class="w-4 h-4"></i> Libros a PDF
+      </button>
+      <button onclick="switchTab('pdf')" id="tab-pdf" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition text-slate-400 hover:text-white hover:bg-slate-800">
+        <i data-lucide="files" class="w-4 h-4"></i> Unir PDFs
+      </button>
+      <button onclick="switchTab('image')" id="tab-image" class="tab-btn flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition text-slate-400 hover:text-white hover:bg-slate-800">
+        <i data-lucide="image" class="w-4 h-4"></i> Imágenes WebP
+      </button>
+    </div>
+
+    <!-- TAB 1: AUDIO -->
+    <section id="panel-audio" class="tab-panel">
+      <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 shadow-xl">
+        <h2 class="text-xl font-bold mb-2 flex items-center gap-2 text-indigo-300">
+          <i data-lucide="music" class="w-5 h-5 text-indigo-400"></i> Extraer Audio de Video
+        </h2>
+        <p class="text-slate-400 text-sm mb-6">Extrae la pista de audio en MP3, WAV o M4A sin pérdida de calidad desde cualquier video (MP4, MKV, MOV, WEBM, AVI).</p>
+
+        <div id="dropzone-audio" class="border-2 border-dashed border-slate-700 rounded-2xl p-8 text-center hover:border-indigo-500/50 transition cursor-pointer bg-slate-950/40">
+          <input type="file" id="file-audio" class="hidden" accept="video/*">
+          <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-slate-800 flex items-center justify-center text-indigo-400">
+            <i data-lucide="upload" class="w-6 h-6"></i>
+          </div>
+          <p class="font-medium text-slate-200">Arrastra tu video aquí o <span class="text-indigo-400 underline">selecciona un archivo</span></p>
+          <p class="text-xs text-slate-500 mt-1">MP4, MKV, MOV, WEBM, AVI (hasta cualquier tamaño)</p>
+          <div id="selected-audio" class="mt-4 hidden inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs px-3 py-1.5 rounded-lg"></div>
+        </div>
+
+        <div class="mt-6 flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <label class="text-sm font-medium text-slate-300">Formato de salida:</label>
+            <select id="format-audio" class="bg-slate-800 border border-slate-700 text-sm rounded-lg px-3 py-1.5 text-slate-200 focus:outline-none focus:border-indigo-500">
+              <option value="mp3">MP3 (Universal, 320 kbps)</option>
+              <option value="wav">WAV (Audio sin compresión)</option>
+              <option value="m4a">M4A / AAC (Apple & Alta Fidelidad)</option>
+            </select>
+          </div>
+          <button onclick="processAudio()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-6 py-2.5 rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center gap-2">
+            <i data-lucide="play" class="w-4 h-4"></i> Extraer Audio
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: VIDEO (SUBTABS: COMPRIMIR, RECORTAR, SILENCIAR, CAPTURA) -->
+    <section id="panel-video" class="tab-panel hidden">
+      <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 shadow-xl">
+        <div class="flex border-b border-slate-800 pb-3 mb-6 gap-3">
+          <button onclick="switchVideoSubtab('compress')" id="vsub-compress" class="vsub-btn text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-600/20 text-indigo-400 border border-indigo-500/30">Comprimir Video</button>
+          <button onclick="switchVideoSubtab('trim')" id="vsub-trim" class="vsub-btn text-xs font-semibold px-3 py-1.5 rounded-lg text-slate-400 hover:text-white">Recortar Clip</button>
+          <button onclick="switchVideoSubtab('gif')" id="vsub-gif" class="vsub-btn text-xs font-semibold px-3 py-1.5 rounded-lg text-slate-400 hover:text-white">Crear GIF</button>
+          <button onclick="switchVideoSubtab('mute')" id="vsub-mute" class="vsub-btn text-xs font-semibold px-3 py-1.5 rounded-lg text-slate-400 hover:text-white">Silenciar</button>
+          <button onclick="switchVideoSubtab('snapshot')" id="vsub-snapshot" class="vsub-btn text-xs font-semibold px-3 py-1.5 rounded-lg text-slate-400 hover:text-white">Capturar Fotograma</button>
+        </div>
+
+        <div id="dropzone-video" class="border-2 border-dashed border-slate-700 rounded-2xl p-8 text-center hover:border-indigo-500/50 transition cursor-pointer bg-slate-950/40 mb-6">
+          <input type="file" id="file-video" class="hidden" accept="video/*">
+          <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-slate-800 flex items-center justify-center text-indigo-400">
+            <i data-lucide="video" class="w-6 h-6"></i>
+          </div>
+          <p class="font-medium text-slate-200">Arrastra tu video aquí</p>
+          <div id="selected-video" class="mt-4 hidden inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs px-3 py-1.5 rounded-lg"></div>
+        </div>
+
+        <!-- SUBTAB COMPRESS -->
+        <div id="vpanel-compress" class="vpanel flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <label class="text-sm font-medium text-slate-300 block mb-1">Nivel de compresión:</label>
+            <select id="compress-profile" class="bg-slate-800 border border-slate-700 text-sm rounded-lg px-3 py-1.5 text-slate-200">
+              <option value="equilibrada">Equilibrada (Recomendada - 50-70% reducción)</option>
+              <option value="ligera">Ligera (Máxima calidad visual)</option>
+              <option value="maxima">Máxima (Ideal para Discord / WhatsApp)</option>
+            </select>
+          </div>
+          <button onclick="processCompress()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-6 py-2.5 rounded-xl shadow-lg transition flex items-center gap-2">
+            <i data-lucide="minimize-2" class="w-4 h-4"></i> Comprimir Video
+          </button>
+        </div>
+
+        <!-- SUBTAB TRIM -->
+        <div id="vpanel-trim" class="vpanel hidden flex flex-wrap items-center justify-between gap-4">
+          <div class="flex gap-4">
+            <div>
+              <label class="text-xs text-slate-400 block mb-1">Inicio (HH:MM:SS):</label>
+              <input id="trim-start" type="text" value="00:00:00" class="bg-slate-800 border border-slate-700 text-sm rounded-lg px-3 py-1.5 w-28 text-center font-mono">
+            </div>
+            <div>
+              <label class="text-xs text-slate-400 block mb-1">Fin (HH:MM:SS):</label>
+              <input id="trim-end" type="text" placeholder="00:00:30" class="bg-slate-800 border border-slate-700 text-sm rounded-lg px-3 py-1.5 w-28 text-center font-mono">
+            </div>
+          </div>
+          <button onclick="processTrim()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-6 py-2.5 rounded-xl shadow-lg transition flex items-center gap-2">
+            <i data-lucide="scissors" class="w-4 h-4"></i> Recortar (1s)
+          </button>
+        </div>
+
+        <!-- SUBTAB GIF -->
+        <div id="vpanel-gif" class="vpanel hidden flex flex-wrap items-center justify-between gap-4">
+          <div class="flex gap-4">
+            <div>
+              <label class="text-xs text-slate-400 block mb-1">Inicio (HH:MM:SS):</label>
+              <input id="gif-start" type="text" value="00:00:00" class="bg-slate-800 border border-slate-700 text-sm rounded-lg px-3 py-1.5 w-28 text-center font-mono">
+            </div>
+            <div>
+              <label class="text-xs text-slate-400 block mb-1">Duración:</label>
+              <input id="gif-dur" type="text" value="5s" class="bg-slate-800 border border-slate-700 text-sm rounded-lg px-3 py-1.5 w-20 text-center font-mono">
+            </div>
+            <div>
+              <label class="text-xs text-slate-400 block mb-1">FPS:</label>
+              <input id="gif-fps" type="number" value="15" class="bg-slate-800 border border-slate-700 text-sm rounded-lg px-3 py-1.5 w-20 text-center font-mono">
+            </div>
+          </div>
+          <button onclick="processGif()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-6 py-2.5 rounded-xl shadow-lg transition flex items-center gap-2">
+            <i data-lucide="film" class="w-4 h-4"></i> Generar GIF
+          </button>
+        </div>
+
+        <!-- SUBTAB MUTE -->
+        <div id="vpanel-mute" class="vpanel hidden flex items-center justify-between">
+          <p class="text-sm text-slate-400">Elimina la pista de audio por completo sin alterar la calidad del video.</p>
+          <button onclick="processMute()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-6 py-2.5 rounded-xl shadow-lg transition flex items-center gap-2">
+            <i data-lucide="volume-x" class="w-4 h-4"></i> Silenciar Video
+          </button>
+        </div>
+
+        <!-- SUBTAB SNAPSHOT -->
+        <div id="vpanel-snapshot" class="vpanel hidden flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <label class="text-sm text-slate-300">Segundo a capturar:</label>
+            <input id="snap-time" type="text" value="00:00:02" class="bg-slate-800 border border-slate-700 text-sm rounded-lg px-3 py-1.5 w-28 text-center font-mono">
+          </div>
+          <button onclick="processSnapshot()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-6 py-2.5 rounded-xl shadow-lg transition flex items-center gap-2">
+            <i data-lucide="camera" class="w-4 h-4"></i> Capturar Imagen
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: DOWNLOAD -->
+    <section id="panel-download" class="tab-panel hidden">
+      <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 shadow-xl">
+        <h2 class="text-xl font-bold mb-2 flex items-center gap-2 text-indigo-300">
+          <i data-lucide="download-cloud" class="w-5 h-5 text-indigo-400"></i> Descargar Medios desde URL
+        </h2>
+        <p class="text-slate-400 text-sm mb-6">Descarga videos o música desde YouTube, Vimeo, SoundCloud u otras plataformas mediante yt-dlp.</p>
+
+        <div class="space-y-4">
+          <div>
+            <label class="text-sm text-slate-300 block mb-1">Pega el enlace del video:</label>
+            <input type="text" id="dl-url" placeholder="https://www.youtube.com/watch?v=..." class="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono text-sm">
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-4 pt-2">
+            <div class="flex items-center gap-6">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" id="dl-audio" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 bg-slate-800 border-slate-700">
+                <span class="text-sm font-medium text-slate-200">Descargar sólo el audio (MP3 con carátula)</span>
+              </label>
+
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-slate-400">Calidad:</span>
+                <select id="dl-quality" class="bg-slate-800 border border-slate-700 text-xs rounded-lg px-2.5 py-1 text-slate-200">
+                  <option value="max">Mejor disponible</option>
+                  <option value="1080p">1080p</option>
+                  <option value="720p">720p</option>
+                </select>
+              </div>
+            </div>
+
+            <button onclick="processDownload()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-6 py-2.5 rounded-xl shadow-lg transition flex items-center gap-2">
+              <i data-lucide="download" class="w-4 h-4"></i> Descargar Medio
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: BOOKS -->
+    <section id="panel-books" class="tab-panel hidden">
+      <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 shadow-xl">
+        <h2 class="text-xl font-bold mb-2 flex items-center gap-2 text-indigo-300">
+          <i data-lucide="book-open" class="w-5 h-5 text-indigo-400"></i> Convertir Libros Digitales a PDF
+        </h2>
+        <p class="text-slate-400 text-sm mb-6">Convierte libros en EPUB, MOBI, AZW3, FB2 o DOCX a formato PDF mediante Calibre con paginación limpia.</p>
+
+        <div id="dropzone-book" class="border-2 border-dashed border-slate-700 rounded-2xl p-8 text-center hover:border-indigo-500/50 transition cursor-pointer bg-slate-950/40 mb-6">
+          <input type="file" id="file-book" class="hidden" accept=".epub,.mobi,.azw3,.fb2,.txt,.docx">
+          <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-slate-800 flex items-center justify-center text-indigo-400">
+            <i data-lucide="book" class="w-6 h-6"></i>
+          </div>
+          <p class="font-medium text-slate-200">Arrastra tu libro electrónico aquí</p>
+          <div id="selected-book" class="mt-4 hidden inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs px-3 py-1.5 rounded-lg"></div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div class="flex gap-4">
+            <div>
+              <label class="text-xs text-slate-400 block mb-1">Tamaño de página:</label>
+              <select id="book-page" class="bg-slate-800 border border-slate-700 text-sm rounded-lg px-3 py-1.5 text-slate-200">
+                <option value="a4">A4 estándar</option>
+                <option value="letter">Carta (Letter)</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-slate-400 block mb-1">Perfil de lectura (opcional):</label>
+              <select id="book-profile" class="bg-slate-800 border border-slate-700 text-sm rounded-lg px-3 py-1.5 text-slate-200">
+                <option value="">Por defecto</option>
+                <option value="kindle">Kindle</option>
+                <option value="kobo">Kobo</option>
+                <option value="tablet">Tablet / iPad</option>
+              </select>
+            </div>
+          </div>
+          <button onclick="processBook()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-6 py-2.5 rounded-xl shadow-lg transition flex items-center gap-2">
+            <i data-lucide="file-text" class="w-4 h-4"></i> Convertir a PDF
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: PDF MERGE -->
+    <section id="panel-pdf" class="tab-panel hidden">
+      <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 shadow-xl">
+        <h2 class="text-xl font-bold mb-2 flex items-center gap-2 text-indigo-300">
+          <i data-lucide="files" class="w-5 h-5 text-indigo-400"></i> Unir Varios Documentos PDF
+        </h2>
+        <p class="text-slate-400 text-sm mb-6">Arrastra dos o más archivos PDF para fusionarlos en un único documento de forma instantánea.</p>
+
+        <div id="dropzone-pdf" class="border-2 border-dashed border-slate-700 rounded-2xl p-8 text-center hover:border-indigo-500/50 transition cursor-pointer bg-slate-950/40 mb-6">
+          <input type="file" id="files-pdf" class="hidden" accept=".pdf" multiple>
+          <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-slate-800 flex items-center justify-center text-indigo-400">
+            <i data-lucide="files" class="w-6 h-6"></i>
+          </div>
+          <p class="font-medium text-slate-200">Arrastra 2 o más archivos PDF aquí</p>
+          <div id="selected-pdfs" class="mt-4 hidden flex-wrap gap-2 justify-center"></div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <label class="text-xs text-slate-400 block mb-1">Nombre del archivo resultante:</label>
+            <input id="pdf-output-name" type="text" value="documento_unido.pdf" class="bg-slate-800 border border-slate-700 text-sm rounded-lg px-3 py-1.5 w-60">
+          </div>
+          <button onclick="processPdfMerge()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-6 py-2.5 rounded-xl shadow-lg transition flex items-center gap-2">
+            <i data-lucide="layers" class="w-4 h-4"></i> Fusionar PDFs
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 6: IMAGE WEBP -->
+    <section id="panel-image" class="tab-panel hidden">
+      <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 shadow-xl">
+        <h2 class="text-xl font-bold mb-2 flex items-center gap-2 text-indigo-300">
+          <i data-lucide="image" class="w-5 h-5 text-indigo-400"></i> Optimizar y Convertir Imágenes
+        </h2>
+        <p class="text-slate-400 text-sm mb-6">Convierte tus imágenes a formato moderno WebP para reducir su peso hasta un 80% manteniendo gran fidelidad.</p>
+
+        <div id="dropzone-image" class="border-2 border-dashed border-slate-700 rounded-2xl p-8 text-center hover:border-indigo-500/50 transition cursor-pointer bg-slate-950/40 mb-6">
+          <input type="file" id="file-image" class="hidden" accept="image/*">
+          <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-slate-800 flex items-center justify-center text-indigo-400">
+            <i data-lucide="image" class="w-6 h-6"></i>
+          </div>
+          <p class="font-medium text-slate-200">Arrastra tu imagen (PNG, JPG, BMP)</p>
+          <div id="selected-image" class="mt-4 hidden inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs px-3 py-1.5 rounded-lg"></div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div class="flex gap-4">
+            <div>
+              <label class="text-xs text-slate-400 block mb-1">Formato:</label>
+              <select id="img-format" class="bg-slate-800 border border-slate-700 text-sm rounded-lg px-3 py-1.5 text-slate-200">
+                <option value="webp">WebP (Ultraligero)</option>
+                <option value="jpg">JPG</option>
+                <option value="png">PNG</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-slate-400 block mb-1">Calidad (1-100):</label>
+              <input id="img-quality" type="number" min="1" max="100" value="80" class="bg-slate-800 border border-slate-700 text-sm rounded-lg px-3 py-1.5 w-20 text-center font-mono">
+            </div>
+            <div>
+              <label class="text-xs text-slate-400 block mb-1">Ancho máx px (opcional):</label>
+              <input id="img-width" type="number" placeholder="Original" class="bg-slate-800 border border-slate-700 text-sm rounded-lg px-3 py-1.5 w-28 text-center font-mono">
+            </div>
+          </div>
+          <button onclick="processImage()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-6 py-2.5 rounded-xl shadow-lg transition flex items-center gap-2">
+            <i data-lucide="sparkles" class="w-4 h-4"></i> Optimizar Imagen
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- LIVE PROGRESS & RESULTS AREA -->
+    <div id="task-feedback" class="mt-8 hidden">
+      <div class="bg-slate-900 border border-indigo-500/30 rounded-2xl p-6 shadow-2xl">
+        <div class="flex items-center justify-between mb-3">
+          <span id="task-message" class="text-sm font-medium text-indigo-300 flex items-center gap-2">
+            <i data-lucide="loader" class="w-4 h-4 animate-spin text-indigo-400"></i> Procesando tarea...
+          </span>
+          <span id="task-percent" class="text-sm font-bold text-indigo-400 font-mono">0%</span>
+        </div>
+        <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+          <div id="task-bar" class="bg-indigo-500 h-full transition-all duration-300 rounded-full" style="width: 0%"></div>
+        </div>
+
+        <!-- RESULTS PREVIEW -->
+        <div id="result-box" class="mt-6 pt-6 border-t border-slate-800 hidden">
+          <h3 class="text-sm font-semibold text-emerald-400 flex items-center gap-2 mb-4">
+            <i data-lucide="check-circle" class="w-5 h-5"></i> ¡Resultado Listo!
+          </h3>
+
+          <div id="preview-container" class="mb-4"></div>
+
+          <a id="download-link" href="#" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-6 py-2.5 rounded-xl shadow-lg shadow-emerald-600/20 transition">
+            <i data-lucide="download" class="w-4 h-4"></i> Descargar Archivo
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="border-t border-slate-900 py-6 text-center text-xs text-slate-600">
+    MediaBox Suite &copy; 2026 &bull; Impulsado por micro-contenedores Docker
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
