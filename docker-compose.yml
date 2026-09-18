@@ -1,0 +1,40 @@
+services:
+  calibre:
+    build:
+      context: .
+      dockerfile: docker/calibre/Dockerfile
+    image: local/toolbox-calibre:latest
+    user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      - ./storage:/workspace
+    working_dir: /workspace
+    network_mode: none
+    stdin_open: false
+    tty: false
+
+  ffmpeg:
+    image: jrottenberg/ffmpeg:latest
+    user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      - ./storage:/workspace
+    working_dir: /workspace
+    network_mode: none
+    stdin_open: false
+    tty: false
+
+  yt-dlp:
+    image: jauderho/yt-dlp:latest
+    user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      - ./storage:/workspace
+    working_dir: /workspace
+
+  pdf:
+    image: local/toolbox-calibre:latest
+    user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      - ./storage:/workspace
+    working_dir: /workspace
+    network_mode: none
+    entrypoint: ["pdfunite"]
+

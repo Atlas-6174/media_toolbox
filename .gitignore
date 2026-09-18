@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+build/
+dist/
+
+# Virtualenv
+.venv/
+env/
+venv/
+
+# Testing & IDE
+.pytest_cache/
+.coverage
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Storage (preserve .gitkeep)
+storage/input/*
+!storage/input/.gitkeep
+storage/output/*
+!storage/output/.gitkeep
