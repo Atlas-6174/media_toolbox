@@ -1,8 +1,24 @@
 [project]
 name = "media-toolbox"
 version = "0.1.0"
-description = "CLI Toolbox local con micro-contenedores"
+description = "Suite multimedia CLI modular y aislada con micro-contenedores Docker"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Atlas"}
+]
 requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Multimedia",
+    "Topic :: Utilities"
+]
 dependencies = [
     "typer>=0.9.0",
     "rich>=13.0.0",
@@ -11,9 +27,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.0.0"
+    "pytest>=7.0.0",
+    "ruff>=0.4.0"
 ]
-
 
 [project.scripts]
 tb = "src.main:app"
@@ -25,3 +41,16 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 packages = ["src", "src.core", "src.tools"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+

@@ -1,0 +1,25 @@
+name: Solicitud de Funcionalidad (Feature Request)
+description: Proponer una nueva herramienta o mejora para Media Toolbox.
+title: "[FEATURE]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: ¿Qué problema o necesidad resuelve esta funcionalidad?
+      description: Explica brevemente el caso de uso.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Solución propuesta
+      description: ¿Cómo debería funcionar el nuevo comando o mejora?
+      placeholder: "ej: Añadir comando tb marca-de-agua para insertar logos en videos con FFmpeg."
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas consideradas
+      description: ¿Has considerado alguna otra solución o herramienta alternativa?

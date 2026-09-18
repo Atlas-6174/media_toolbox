@@ -1,12 +1,14 @@
 import os
 import shutil
-from typing import List, Optional
 from pathlib import Path
+from typing import List, Optional
+
 from pydantic_settings import BaseSettings
 
 SUPPORTED_BOOK_EXTENSIONS = [".epub", ".mobi", ".azw3", ".fb2", ".txt", ".docx", ".pdf"]
 SUPPORTED_VIDEO_EXTENSIONS = [".mp4", ".mkv", ".mov", ".webm", ".avi", ".m4v", ".flv"]
 SUPPORTED_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff"]
+
 
 class Settings(BaseSettings):
     BASE_DIR: Path = Path(__file__).resolve().parent.parent.parent
@@ -14,13 +16,15 @@ class Settings(BaseSettings):
     INPUT_DIR: Path = STORAGE_DIR / "input"
     OUTPUT_DIR: Path = STORAGE_DIR / "output"
     DOCKER_COMPOSE_FILE: Path = BASE_DIR / "docker-compose.yml"
-    
+
     UID: str = str(os.getuid() if hasattr(os, "getuid") else 1000)
     GID: str = str(os.getgid() if hasattr(os, "getgid") else 1000)
+
 
 settings = Settings()
 settings.INPUT_DIR.mkdir(parents=True, exist_ok=True)
 settings.OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
 
 def resolve_input_file(path_or_name: str, allowed_extensions: Optional[List[str]] = None, subfolder: str = "") -> Path:
     """

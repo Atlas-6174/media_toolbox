@@ -1,18 +1,14 @@
 from pathlib import Path
 from typing import Optional
-from src.core.docker_runner import DockerRunner
+
 from src.core.config import settings
+from src.core.docker_runner import DockerRunner
+
 
 class ImageTool:
     SERVICE_NAME = "ffmpeg"
 
-    def convert(
-        self,
-        input_file: Path,
-        output_file: Path,
-        calidad: int = 80,
-        ancho: Optional[int] = None
-    ) -> None:
+    def convert(self, input_file: Path, output_file: Path, calidad: int = 80, ancho: Optional[int] = None) -> None:
         try:
             container_input = input_file.resolve().relative_to(settings.STORAGE_DIR.resolve())
         except ValueError:

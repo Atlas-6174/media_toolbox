@@ -1,28 +1,29 @@
-import typer
-from typing import Optional, List
 from pathlib import Path
+from typing import List, Optional
+
+import typer
 from rich.console import Console
-from rich.table import Table
 from rich.panel import Panel
 from rich.prompt import Prompt
+from rich.table import Table
 
 from src.core.config import (
-    settings,
-    resolve_input_file,
     SUPPORTED_BOOK_EXTENSIONS,
+    SUPPORTED_IMAGE_EXTENSIONS,
     SUPPORTED_VIDEO_EXTENSIONS,
-    SUPPORTED_IMAGE_EXTENSIONS
+    resolve_input_file,
+    settings,
 )
-from src.core.docker_runner import DockerRunner, DockerCommandExecutionError, ensure_docker
+from src.core.docker_runner import DockerCommandExecutionError
 from src.core.notify import notify, open_directory
 from src.tools.calibre import CalibreTool
-from src.tools.ffmpeg import FFmpegTool
-from src.tools.downloader import DownloaderTool
-from src.tools.trimmer import TrimmerTool
-from src.tools.gif import GifTool
 from src.tools.compressor import VideoCompressorTool
-from src.tools.pdf import PdfTool
+from src.tools.downloader import DownloaderTool
+from src.tools.ffmpeg import FFmpegTool
+from src.tools.gif import GifTool
 from src.tools.image import ImageTool
+from src.tools.pdf import PdfTool
+from src.tools.trimmer import TrimmerTool
 
 app = typer.Typer(help="📦 Media Toolbox - Suite multimedia CLI con micro-contenedores Docker", rich_markup_mode="rich")
 pdf_app = typer.Typer(help="📄 Utilidades para documentos PDF", rich_markup_mode="rich")
@@ -30,14 +31,17 @@ app.add_typer(pdf_app, name="pdf")
 
 console = Console()
 
+
 @app.callback()
 def main_callback(
     ctx: typer.Context,
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="Muestra registros detallados de los contenedores en caso de error")
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Muestra registros detallados de los contenedores en caso de error"
+    ),
 ):
     ctx.ensure_object(dict)
     ctx.obj["verbose"] = verbose
-    ensure_docker()
+
 
 def get_available_files_by_exts(extensions: List[str]):
     found = []
@@ -46,8 +50,11 @@ def get_available_files_by_exts(extensions: List[str]):
         found.extend(settings.INPUT_DIR.rglob(f"*.{clean_ext}"))
     return sorted(list(set(found)), key=lambda p: p.name.lower())
 
+
 def render_files_table(files, category_name: str):
-    table = Table(title=f"Archivos {category_name} disponibles en storage/input", show_header=True, header_style="bold magenta")
+    table = Table(
+        title=f"Archivos {category_name} disponibles en storage/input", show_header=True, header_style="bold magenta"
+    )
     table.add_column("#", style="dim", width=4, justify="center")
     table.add_column("Nombre del archivo", style="cyan")
     table.add_column("Tamaño", style="green", justify="right")
@@ -58,6 +65,7 @@ def render_files_table(files, category_name: str):
         table.add_row(str(idx), f.name, size_str)
     console.print(table)
 
+
 def handle_execution_error(e: Exception, ctx: typer.Context, action_name: str):
     console.print(f"\n[bold red]❌ Falló {action_name}[/bold red]")
     if isinstance(e, DockerCommandExecutionError):
@@ -66,9 +74,12 @@ def handle_execution_error(e: Exception, ctx: typer.Context, action_name: str):
             for log in e.logs[-20:]:
                 console.print(f"[dim]{log.strip()}[/dim]")
         else:
-            console.print("[yellow]Usa [bold]--verbose[/bold] o [bold]-v[/bold] para inspeccionar los registros del contenedor.[/yellow]")
+            console.print(
+                "[yellow]Usa [bold]--verbose[/bold] o [bold]-v[/bold] para inspeccionar los registros del contenedor.[/yellow]"
+            )
     else:
         console.print(f"[red]{e}[/red]")
+
 
 # ---------------------------------------------------------
 # 1. CONVERTIR LIBROS (Calibre)
@@ -79,7 +90,7 @@ def convertir(
     archivo: Optional[str] = typer.Argument(None, help="Nombre o ruta del libro"),
     pagina: str = typer.Option("a4", "--pagina", "-p", help="Tamaño de página (a4, letter)"),
     perfil: Optional[str] = typer.Option(None, "--perfil", help="Perfil de lector (kindle, kobo, tablet)"),
-    open_folder: bool = typer.Option(False, "--open", "-o", help="Abre la carpeta de salida al finalizar")
+    open_folder: bool = typer.Option(False, "--open", "-o", help="Abre la carpeta de salida al finalizar"),
 ):
     libros_disponibles = get_available_files_by_exts(SUPPORTED_BOOK_EXTENSIONS)
     archivos_a_procesar = []
@@ -116,6 +127,7 @@ def convertir(
     if open_folder:
         open_directory(carpeta_pdfs)
 
+
 # ---------------------------------------------------------
 # 2. EXTRAER AUDIO (FFmpeg)
 # ---------------------------------------------------------
@@ -124,7 +136,7 @@ def extraer_audio(
     ctx: typer.Context,
     archivo: Optional[str] = typer.Argument(None, help="Nombre o ruta del video"),
     formato: str = typer.Option("mp3", "--formato", "-f", help="Formato de salida (mp3, wav, m4a)"),
-    open_folder: bool = typer.Option(False, "--open", "-o", help="Abre la carpeta de salida al finalizar")
+    open_folder: bool = typer.Option(False, "--open", "-o", help="Abre la carpeta de salida al finalizar"),
 ):
     videos_disponibles = get_available_files_by_exts(SUPPORTED_VIDEO_EXTENSIONS)
     archivos_a_procesar = []
@@ -162,6 +174,7 @@ def extraer_audio(
     if open_folder:
         open_directory(carpeta_audios)
 
+
 # ---------------------------------------------------------
 # 3. DESCARGAR MEDIOS (yt-dlp)
 # ---------------------------------------------------------
@@ -172,7 +185,7 @@ def descargar_medio(
     audio: bool = typer.Option(False, "--audio", "-a", help="Descarga directamente solo el audio"),
     calidad: str = typer.Option("max", "--calidad", "-c", help="Calidad del video (max, 1080p, 720p)"),
     playlist: bool = typer.Option(False, "--playlist", help="Permite descargar listas de reproducción completas"),
-    open_folder: bool = typer.Option(False, "--open", "-o", help="Abre la carpeta de descarga al finalizar")
+    open_folder: bool = typer.Option(False, "--open", "-o", help="Abre la carpeta de descarga al finalizar"),
 ):
     if url is None:
         url = Prompt.ask("\n[bold cyan]Ingresa la URL a descargar[/bold cyan]")
@@ -191,6 +204,7 @@ def descargar_medio(
     except Exception as e:
         handle_execution_error(e, ctx, "la descarga multimedia")
 
+
 # ---------------------------------------------------------
 # 4. RECORTAR ARCHIVOS (FFmpeg sin re-encode)
 # ---------------------------------------------------------
@@ -201,7 +215,7 @@ def recortar(
     desde: Optional[str] = typer.Option(None, "--desde", "-s", help="Tiempo de inicio (ej. 00:01:00)"),
     hasta: Optional[str] = typer.Option(None, "--hasta", "-e", help="Tiempo final (ej. 00:02:30)"),
     duracion: Optional[str] = typer.Option(None, "--duracion", "-d", help="Duración del corte (ej. 30s)"),
-    open_folder: bool = typer.Option(False, "--open", "-o", help="Abre la carpeta de salida al finalizar")
+    open_folder: bool = typer.Option(False, "--open", "-o", help="Abre la carpeta de salida al finalizar"),
 ):
     if not archivo:
         videos = get_available_files_by_exts(SUPPORTED_VIDEO_EXTENSIONS)
@@ -233,6 +247,7 @@ def recortar(
     except Exception as e:
         handle_execution_error(e, ctx, f"el recorte de {archivo_path.name}")
 
+
 # ---------------------------------------------------------
 # 5. GENERAR GIF (FFmpeg)
 # ---------------------------------------------------------
@@ -245,7 +260,7 @@ def crear_gif(
     duracion: Optional[str] = typer.Option("5s", "--duracion", "-d", help="Duración del GIF (ej. 5s)"),
     fps: int = typer.Option(15, "--fps", help="Cuadros por segundo"),
     ancho: int = typer.Option(480, "--ancho", "-w", help="Ancho en píxeles"),
-    open_folder: bool = typer.Option(False, "--open", "-o", help="Abre la carpeta de salida al finalizar")
+    open_folder: bool = typer.Option(False, "--open", "-o", help="Abre la carpeta de salida al finalizar"),
 ):
     if not archivo:
         videos = get_available_files_by_exts(SUPPORTED_VIDEO_EXTENSIONS)
@@ -273,6 +288,7 @@ def crear_gif(
     except Exception as e:
         handle_execution_error(e, ctx, f"la creación de GIF de {archivo_path.name}")
 
+
 # ---------------------------------------------------------
 # 6. COMPRIMIR VIDEO (FFmpeg)
 # ---------------------------------------------------------
@@ -281,7 +297,7 @@ def comprimir_video(
     ctx: typer.Context,
     archivo: Optional[str] = typer.Argument(None, help="Video a comprimir"),
     perfil: str = typer.Option("equilibrada", "--perfil", "-p", help="Perfil: ligera, equilibrada, maxima"),
-    open_folder: bool = typer.Option(False, "--open", "-o", help="Abre la carpeta de salida al finalizar")
+    open_folder: bool = typer.Option(False, "--open", "-o", help="Abre la carpeta de salida al finalizar"),
 ):
     if not archivo:
         videos = get_available_files_by_exts(SUPPORTED_VIDEO_EXTENSIONS)
@@ -309,6 +325,7 @@ def comprimir_video(
     except Exception as e:
         handle_execution_error(e, ctx, f"la compresión de {archivo_path.name}")
 
+
 # ---------------------------------------------------------
 # 7. UTILIDADES PDF (pdfunite)
 # ---------------------------------------------------------
@@ -317,7 +334,7 @@ def unir_pdfs(
     ctx: typer.Context,
     archivos: Optional[List[str]] = typer.Argument(None, help="Lista de PDFs a unir"),
     salida: str = typer.Option("documento_unido.pdf", "--salida", "-s", help="Nombre del archivo resultante"),
-    open_folder: bool = typer.Option(False, "--open", "-o", help="Abre la carpeta de salida al finalizar")
+    open_folder: bool = typer.Option(False, "--open", "-o", help="Abre la carpeta de salida al finalizar"),
 ):
     if not archivos:
         disponibles = sorted(list(settings.INPUT_DIR.rglob("*.pdf")) + list(settings.OUTPUT_DIR.rglob("*.pdf")))
@@ -346,6 +363,7 @@ def unir_pdfs(
     except Exception as e:
         handle_execution_error(e, ctx, "la unión de PDFs")
 
+
 # ---------------------------------------------------------
 # 8. CONVERSIÓN DE IMÁGENES (FFmpeg WebP)
 # ---------------------------------------------------------
@@ -356,7 +374,7 @@ def convertir_imagen(
     formato: str = typer.Option("webp", "--formato", "-f", help="Formato de salida (webp, jpg, png)"),
     calidad: int = typer.Option(80, "--calidad", "-q", help="Calidad de salida (1-100)"),
     ancho: Optional[int] = typer.Option(None, "--ancho", "-w", help="Redimensionar ancho en píxeles"),
-    open_folder: bool = typer.Option(False, "--open", "-o", help="Abre la carpeta de salida al finalizar")
+    open_folder: bool = typer.Option(False, "--open", "-o", help="Abre la carpeta de salida al finalizar"),
 ):
     if not archivo:
         imagenes = get_available_files_by_exts(SUPPORTED_IMAGE_EXTENSIONS)
@@ -385,6 +403,7 @@ def convertir_imagen(
     except Exception as e:
         handle_execution_error(e, ctx, f"la optimización de {archivo_path.name}")
 
+
 # ---------------------------------------------------------
 # 9. ESTADO DEL SISTEMA (tb estado)
 # ---------------------------------------------------------
@@ -408,17 +427,28 @@ def mostrar_estado():
     table.add_column("Archivos", justify="center")
     table.add_column("Espacio Ocupado", justify="right", style="magenta")
 
-    table.add_row("storage/input (Entrada)", str(in_count), f"{in_size / (1024*1024):.2f} MB")
-    table.add_row("storage/output (Salida)", str(out_count), f"{out_size / (1024*1024):.2f} MB")
+    table.add_row("storage/input (Entrada)", str(in_count), f"{in_size / (1024 * 1024):.2f} MB")
+    table.add_row("storage/output (Salida)", str(out_count), f"{out_size / (1024 * 1024):.2f} MB")
     console.print(table)
 
     # Estado de contenedores
     console.print("\n[bold cyan]🐳 Imágenes de Docker asociadas:[/bold cyan]")
     try:
         import subprocess
+
         res = subprocess.run(
-            ["docker", "images", "--filter=reference=local/toolbox-calibre*", "--filter=reference=*ffmpeg*", "--filter=reference=*yt-dlp*", "--format", "{{.Repository}}:{{.Tag}}\t{{.Size}}"],
-            capture_output=True, text=True, timeout=3
+            [
+                "docker",
+                "images",
+                "--filter=reference=local/toolbox-calibre*",
+                "--filter=reference=*ffmpeg*",
+                "--filter=reference=*yt-dlp*",
+                "--format",
+                "{{.Repository}}:{{.Tag}}\t{{.Size}}",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=3,
         )
         if res.stdout.strip():
             img_table = Table(show_header=True, header_style="bold blue")
@@ -433,6 +463,7 @@ def mostrar_estado():
             console.print("[dim]No se detectaron imágenes descargadas aún.[/dim]")
     except Exception:
         console.print("[dim]No fue posible consultar imágenes de Docker.[/dim]")
+
 
 if __name__ == "__main__":
     app()

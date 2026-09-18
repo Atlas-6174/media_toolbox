@@ -1,20 +1,19 @@
 import re
 from pathlib import Path
 from typing import Optional
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
-from src.tools.base import BaseTool
-from src.core.docker_runner import DockerRunner
+
+from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn
+
 from src.core.config import settings
+from src.core.docker_runner import DockerRunner
+from src.tools.base import BaseTool
+
 
 class CalibreTool(BaseTool):
     SERVICE_NAME = "calibre"
 
     def convert(
-        self,
-        input_file: Path,
-        output_file: Path,
-        paper_size: str = "a4",
-        output_profile: Optional[str] = None
+        self, input_file: Path, output_file: Path, paper_size: str = "a4", output_profile: Optional[str] = None
     ) -> None:
         try:
             container_input = input_file.resolve().relative_to(settings.STORAGE_DIR.resolve())
@@ -29,12 +28,17 @@ class CalibreTool(BaseTool):
         args = [
             str(container_input),
             str(container_output),
-            "--paper-size", paper_size,
+            "--paper-size",
+            paper_size,
             "--pdf-page-numbers",
-            "--margin-top", "20",
-            "--margin-bottom", "20",
-            "--margin-left", "20",
-            "--margin-right", "20"
+            "--margin-top",
+            "20",
+            "--margin-bottom",
+            "20",
+            "--margin-left",
+            "20",
+            "--margin-right",
+            "20",
         ]
 
         if output_profile:
@@ -47,7 +51,7 @@ class CalibreTool(BaseTool):
             TextColumn("[bold magenta]{task.description}"),
             BarColumn(bar_width=None, style="black", complete_style="magenta"),
             TaskProgressColumn(),
-            expand=True
+            expand=True,
         ) as progress:
             tarea = progress.add_task(f"Convirtiendo '{input_file.name}'...", total=100.0)
 

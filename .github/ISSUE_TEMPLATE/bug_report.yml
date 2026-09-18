@@ -1,0 +1,41 @@
+name: Reporte de Error (Bug Report)
+description: Informar sobre un problema o comportamiento inesperado en Media Toolbox.
+title: "[BUG]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Gracias por tomarte el tiempo de reportar este problema.
+  - type: input
+    id: command
+    attributes:
+      label: Comando ejecutado
+      description: ¿Qué comando ejecutaste en la terminal?
+      placeholder: "ej: tb convertir libro.epub --pagina letter"
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportamiento esperado
+      description: ¿Qué esperabas que ocurriera?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Comportamiento actual o mensaje de error
+      description: Pega aquí los logs o el mensaje de error (incluye la salida de --verbose si aplica).
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Entorno
+      description: Sistema operativo y versión de Docker.
+      value: |
+        - SO: [ej. macOS Sonoma 14.5 / Ubuntu 22.04 / Windows 11 WSL2]
+        - Docker Version: [ej. Docker Engine 26.0 / Docker Desktop 4.29]
+        - Python Version: [ej. 3.11.8]
+    validations:
+      required: true

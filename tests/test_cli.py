@@ -1,7 +1,9 @@
 from typer.testing import CliRunner
+
 from src.main import app
 
 runner = CliRunner()
+
 
 def test_cli_help():
     res = runner.invoke(app, ["--help"])
@@ -16,6 +18,7 @@ def test_cli_help():
     assert "imagen" in res.stdout
     assert "pdf" in res.stdout
     assert "estado" in res.stdout
+
 
 def test_cli_pdf_help():
     res = runner.invoke(app, ["pdf", "--help"])

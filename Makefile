@@ -55,6 +55,13 @@ imagen:
 test:
 	pytest tests/ -v
 
+lint:
+	ruff check src tests
+
+format:
+	ruff format src tests
+	ruff check --fix src tests
+
 clean:
 	@echo "🧹 Limpiando archivos en storage/..."
 	@find storage/input -mindepth 1 -not -name '.gitkeep' -delete 2>/dev/null || true

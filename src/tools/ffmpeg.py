@@ -1,9 +1,12 @@
 import re
 from pathlib import Path
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
-from src.tools.base import BaseTool
-from src.core.docker_runner import DockerRunner
+
+from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn
+
 from src.core.config import settings
+from src.core.docker_runner import DockerRunner
+from src.tools.base import BaseTool
+
 
 def tiempo_a_segundos(tiempo_str: str) -> float:
     """Convierte un formato HH:MM:SS.xx a segundos totales."""
@@ -12,6 +15,7 @@ def tiempo_a_segundos(tiempo_str: str) -> float:
         return int(h) * 3600 + int(m) * 60 + float(s)
     except ValueError:
         return 0.0
+
 
 class FFmpegTool(BaseTool):
     SERVICE_NAME = "ffmpeg"
@@ -38,18 +42,11 @@ class FFmpegTool(BaseTool):
         else:
             codec_args = ["-q:a", "0", "-map", "a"]
 
-        args = [
-            "-y",
-            "-i", str(container_input),
-            *codec_args,
-            "-progress", "pipe:1",
-            "-nostats",
-            str(container_output)
-        ]
+        args = ["-y", "-i", str(container_input), *codec_args, "-progress", "pipe:1", "-nostats", str(container_output)]
 
         regex_duracion = re.compile(r"Duration:\s+(\d{2}:\d{2}:\d{2}\.\d+)")
         regex_tiempo = re.compile(r"out_time=(\d{2}:\d{2}:\d{2}\.\d+)")
-        
+
         duracion_total = 0.0
 
         with Progress(
@@ -57,7 +54,7 @@ class FFmpegTool(BaseTool):
             TextColumn("[bold cyan]{task.description}"),
             BarColumn(bar_width=None, style="black", complete_style="cyan"),
             TaskProgressColumn(),
-            expand=True
+            expand=True,
         ) as progress:
             tarea = progress.add_task(f"Analizando '{input_file.name}'...", total=100.0)
 

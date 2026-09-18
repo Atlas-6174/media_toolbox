@@ -1,7 +1,9 @@
 from pathlib import Path
 from typing import Optional
-from src.core.docker_runner import DockerRunner
+
 from src.core.config import settings
+from src.core.docker_runner import DockerRunner
+
 
 class TrimmerTool:
     SERVICE_NAME = "ffmpeg"
@@ -12,7 +14,7 @@ class TrimmerTool:
         output_file: Path,
         desde: Optional[str] = None,
         hasta: Optional[str] = None,
-        duracion: Optional[str] = None
+        duracion: Optional[str] = None,
     ) -> None:
         try:
             container_input = input_file.resolve().relative_to(settings.STORAGE_DIR.resolve())
@@ -32,12 +34,18 @@ class TrimmerTool:
         elif duracion:
             args.extend(["-t", duracion])
 
-        args.extend([
-            "-i", str(container_input),
-            "-c", "copy",
-            "-map", "0",
-            "-avoid_negative_ts", "make_zero",
-            str(container_output)
-        ])
+        args.extend(
+            [
+                "-i",
+                str(container_input),
+                "-c",
+                "copy",
+                "-map",
+                "0",
+                "-avoid_negative_ts",
+                "make_zero",
+                str(container_output),
+            ]
+        )
 
         DockerRunner.run_service(self.SERVICE_NAME, args)

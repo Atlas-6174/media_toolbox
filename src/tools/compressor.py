@@ -1,19 +1,17 @@
 import re
 from pathlib import Path
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
-from src.tools.ffmpeg import tiempo_a_segundos
-from src.core.docker_runner import DockerRunner
+
+from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn
+
 from src.core.config import settings
+from src.core.docker_runner import DockerRunner
+from src.tools.ffmpeg import tiempo_a_segundos
+
 
 class VideoCompressorTool:
     SERVICE_NAME = "ffmpeg"
 
-    def compress(
-        self,
-        input_file: Path,
-        output_file: Path,
-        perfil: str = "equilibrada"
-    ) -> None:
+    def compress(self, input_file: Path, output_file: Path, perfil: str = "equilibrada") -> None:
         try:
             container_input = input_file.resolve().relative_to(settings.STORAGE_DIR.resolve())
         except ValueError:
@@ -32,23 +30,30 @@ class VideoCompressorTool:
             crf = "30"
             preset = "faster"
             extra_vf = ["-vf", "scale=-2:720"]
-        else: # equilibrada
+        else:  # equilibrada
             crf = "25"
             preset = "medium"
             extra_vf = []
 
         args = [
             "-y",
-            "-i", str(container_input),
-            "-c:v", "libx264",
-            "-crf", crf,
-            "-preset", preset,
+            "-i",
+            str(container_input),
+            "-c:v",
+            "libx264",
+            "-crf",
+            crf,
+            "-preset",
+            preset,
             *extra_vf,
-            "-c:a", "aac",
-            "-b:a", "128k",
-            "-progress", "pipe:1",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "128k",
+            "-progress",
+            "pipe:1",
             "-nostats",
-            str(container_output)
+            str(container_output),
         ]
 
         regex_duracion = re.compile(r"Duration:\s+(\d{2}:\d{2}:\d{2}\.\d+)")
@@ -61,7 +66,7 @@ class VideoCompressorTool:
             TextColumn("[bold yellow]{task.description}"),
             BarColumn(bar_width=None, style="black", complete_style="yellow"),
             TaskProgressColumn(),
-            expand=True
+            expand=True,
         ) as progress:
             tarea = progress.add_task(f"Comprimiendo {input_file.name}...", total=100.0)
 
