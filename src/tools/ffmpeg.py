@@ -1,5 +1,6 @@
 import re
 from pathlib import Path
+from typing import Optional
 
 from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn
 
@@ -108,4 +109,124 @@ class FFmpegTool(BaseTool):
             container_output = Path("output/capturas") / output_file.name
 
         args = ["-y", "-ss", tiempo, "-i", str(container_input), "-vframes", "1", "-update", "1", "-q:v", "2", str(container_output)]
+        DockerRunner.run_service(self.SERVICE_NAME, args)
+
+    def change_speed(self, input_file: Path, output_file: Path, velocidad: float = 1.5) -> None:
+        """Modifica la velocidad de reproducción de un audio sin alterar el tono vocal usando el filtro atempo."""
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            container_input = input_file.resolve().relative_to(settings.STORAGE_DIR.resolve())
+        except ValueError:
+            container_input = Path("input") / input_file.name
+
+        try:
+            container_output = output_file.resolve().relative_to(settings.STORAGE_DIR.resolve())
+        except ValueError:
+            container_output = Path("output/audios") / output_file.name
+
+        v = max(0.25, min(4.0, float(velocidad)))
+        if v > 2.0:
+            filter_str = f"atempo=2.0,atempo={v / 2.0:.2f}"
+        elif v < 0.5:
+            filter_str = f"atempo=0.5,atempo={v / 0.5:.2f}"
+        else:
+            filter_str = f"atempo={v:.2f}"
+
+        args = [
+            "-y",
+            "-i", str(container_input),
+            "-filter:a", filter_str,
+            "-vn",
+            str(container_output),
+        ]
+        DockerRunner.run_service(self.SERVICE_NAME, args)
+
+    def _to_container_path(self, path: Path, fallback: str) -> Path:
+        try:
+            return path.resolve().relative_to(settings.STORAGE_DIR.resolve())
+        except ValueError:
+            return Path(fallback) / path.name
+
+    def extract_subtitles(self, input_file: Path, output_file: Path, pista: int = 0) -> None:
+        """Extrae una pista de subtítulos de un video a un archivo .srt/.vtt independiente."""
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+        container_input = self._to_container_path(input_file, "input")
+        container_output = self._to_container_path(output_file, "output/subtitulos")
+
+        args = ["-y", "-i", str(container_input), "-map", f"0:s:{pista}", str(container_output)]
+        DockerRunner.run_service(self.SERVICE_NAME, args)
+
+    def burn_subtitles(self, input_file: Path, subtitle_file: Path, output_file: Path) -> None:
+        """Incrusta ('quema') una pista de subtítulos directamente sobre el video, visible en cualquier reproductor."""
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+        container_input = self._to_container_path(input_file, "input")
+        container_subs = self._to_container_path(subtitle_file, "input")
+        container_output = self._to_container_path(output_file, "output/marcas_agua")
+
+        args = [
+            "-y",
+            "-i", str(container_input),
+            "-vf", f"subtitles={container_subs}",
+            "-c:a", "copy",
+            str(container_output),
+        ]
+        DockerRunner.run_service(self.SERVICE_NAME, args)
+
+    def watermark(
+        self,
+        input_file: Path,
+        output_file: Path,
+        texto: Optional[str] = None,
+        logo_file: Optional[Path] = None,
+        posicion: str = "bottomright",
+        opacidad: float = 0.7,
+    ) -> None:
+        """Superpone una marca de agua de texto o de imagen (logo) sobre un video."""
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+        container_input = self._to_container_path(input_file, "input")
+        container_output = self._to_container_path(output_file, "output/marcas_agua")
+
+        margin = 10
+        positions = {
+            "bottomright": ("main_w-overlay_w-{m}", "main_h-overlay_h-{m}"),
+            "bottomleft": ("{m}", "main_h-overlay_h-{m}"),
+            "topright": ("main_w-overlay_w-{m}", "{m}"),
+            "topleft": ("{m}", "{m}"),
+            "center": ("(main_w-overlay_w)/2", "(main_h-overlay_h)/2"),
+        }
+        x_expr, y_expr = positions.get(posicion, positions["bottomright"])
+        x_expr, y_expr = x_expr.format(m=margin), y_expr.format(m=margin)
+
+        if logo_file is not None:
+            container_logo = self._to_container_path(logo_file, "input")
+            args = [
+                "-y",
+                "-i", str(container_input),
+                "-i", str(container_logo),
+                "-filter_complex",
+                f"[1:v]format=rgba,colorchannelmixer=aa={opacidad}[wm];[0:v][wm]overlay={x_expr}:{y_expr}",
+                "-codec:a", "copy",
+                str(container_output),
+            ]
+        else:
+            texto_escapado = (texto or "MediaBox").replace("\\", "\\\\").replace(":", "\\:").replace("'", "’")
+            text_positions = {
+                "bottomright": f"x=w-tw-{margin}:y=h-th-{margin}",
+                "bottomleft": f"x={margin}:y=h-th-{margin}",
+                "topright": f"x=w-tw-{margin}:y={margin}",
+                "topleft": f"x={margin}:y={margin}",
+                "center": "x=(w-tw)/2:y=(h-th)/2",
+            }
+            pos_expr = text_positions.get(posicion, text_positions["bottomright"])
+            draw = (
+                f"drawtext=text='{texto_escapado}':fontcolor=white@{opacidad}:fontsize=24:"
+                f"box=1:boxcolor=black@{opacidad * 0.4}:boxborderw=6:{pos_expr}"
+            )
+            args = [
+                "-y",
+                "-i", str(container_input),
+                "-vf", draw,
+                "-codec:a", "copy",
+                str(container_output),
+            ]
         DockerRunner.run_service(self.SERVICE_NAME, args)

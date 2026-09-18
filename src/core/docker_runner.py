@@ -77,6 +77,7 @@ class DockerRunner:
             bufsize=1,
         )
 
+        assert process.stdout is not None  # garantizado por stdout=subprocess.PIPE
         collected_logs = []
         for line in iter(process.stdout.readline, ""):
             collected_logs.append(line)

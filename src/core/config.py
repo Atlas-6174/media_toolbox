@@ -7,7 +7,8 @@ from pydantic_settings import BaseSettings
 
 SUPPORTED_BOOK_EXTENSIONS = [".epub", ".mobi", ".azw3", ".fb2", ".txt", ".docx", ".pdf"]
 SUPPORTED_VIDEO_EXTENSIONS = [".mp4", ".mkv", ".mov", ".webm", ".avi", ".m4v", ".flv"]
-SUPPORTED_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff"]
+SUPPORTED_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff", ".heic", ".heif", ".svg"]
+SUPPORTED_DESIGN_EXTENSIONS = [".svg", ".pdf", ".png", ".jpg", ".jpeg", ".tiff", ".eps"]
 
 
 class Settings(BaseSettings):
@@ -37,6 +38,14 @@ STANDARD_SUBDIRS = [
     "pdfs",
     "zips",
     "books",
+    "limpios",
+    "pdf_comprimidos",
+    "cmyk",
+    "markdown",
+    "docs",
+    "subtitulos",
+    "marcas_agua",
+    "sin_fondo",
 ]
 for sub in STANDARD_SUBDIRS:
     (settings.INPUT_DIR / sub).mkdir(parents=True, exist_ok=True)

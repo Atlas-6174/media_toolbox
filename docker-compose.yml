@@ -13,7 +13,9 @@ services:
     tty: false
 
   ffmpeg:
-    image: jrottenberg/ffmpeg:latest
+    # Fijado a una versión concreta (en vez de ":latest") para builds reproducibles.
+    # Dependabot (.github/dependabot.yml) abre un PR automático cuando hay una nueva versión.
+    image: jrottenberg/ffmpeg:9.0.1-ubuntu2404
     user: "${UID:-1000}:${GID:-1000}"
     volumes:
       - ${HOST_STORAGE_PATH:-./storage}:/workspace
@@ -23,21 +25,85 @@ services:
     tty: false
 
   yt-dlp:
-    image: jauderho/yt-dlp:latest
+    # Fijado a una versión concreta. yt-dlp se rompe seguido contra sitios que
+    # cambian su frontend, así que esta versión necesita actualizarse con más
+    # frecuencia que las demás imágenes: Dependabot abre un PR cuando sale una
+    # nueva, y basta con mergearlo para quedar al día.
+    image: jauderho/yt-dlp:2026.08.19
     user: "${UID:-1000}:${GID:-1000}"
     volumes:
       - ${HOST_STORAGE_PATH:-./storage}:/workspace
       - ${HOST_STORAGE_PATH:-./storage}:/downloads
     working_dir: /workspace
 
-  pdf:
-    image: local/toolbox-calibre:latest
+  tools:
+    build:
+      context: .
+      dockerfile: docker/tools/Dockerfile
+    image: local/toolbox-tools:latest
     user: "${UID:-1000}:${GID:-1000}"
     volumes:
       - ${HOST_STORAGE_PATH:-./storage}:/workspace
     working_dir: /workspace
     network_mode: none
-    entrypoint: ["pdfunite"]
+    stdin_open: false
+    tty: false
+
+  pdf:
+    image: local/toolbox-tools:latest
+    user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      - ${HOST_STORAGE_PATH:-./storage}:/workspace
+    working_dir: /workspace
+    network_mode: none
+    stdin_open: false
+    tty: false
+
+  privacy:
+    image: local/toolbox-tools:latest
+    user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      - ${HOST_STORAGE_PATH:-./storage}:/workspace
+    working_dir: /workspace
+    network_mode: none
+    stdin_open: false
+    tty: false
+
+  cmyk:
+    image: local/toolbox-tools:latest
+    user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      - ${HOST_STORAGE_PATH:-./storage}:/workspace
+    working_dir: /workspace
+    network_mode: none
+    stdin_open: false
+    tty: false
+
+  libreoffice:
+    build:
+      context: .
+      dockerfile: docker/libreoffice/Dockerfile
+    image: local/toolbox-libreoffice:latest
+    user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      - ${HOST_STORAGE_PATH:-./storage}:/workspace
+    working_dir: /workspace
+    network_mode: none
+    stdin_open: false
+    tty: false
+
+  rembg:
+    build:
+      context: .
+      dockerfile: docker/rembg/Dockerfile
+    image: local/toolbox-rembg:latest
+    user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      - ${HOST_STORAGE_PATH:-./storage}:/workspace
+    working_dir: /workspace
+    network_mode: none
+    stdin_open: false
+    tty: false
 
   web:
     build:
@@ -45,17 +111,26 @@ services:
       dockerfile: docker/web/Dockerfile
     image: local/toolbox-web:latest
     ports:
-      - "8000:8000"
+      # Publicado solo en loopback: este servicio monta el socket de Docker del
+      # host (ver más abajo) y no tiene autenticación, así que NO debe exponerse
+      # a la LAN ni a Internet. Si necesitas acceso remoto, colócalo detrás de un
+      # reverse proxy con autenticación.
+      - "127.0.0.1:8000:8000"
     volumes:
       - ./storage:/app/storage
       - ./src:/app/src
       - ./docker-compose.yml:/app/docker-compose.yml
+      # ADVERTENCIA: este socket le da al contenedor control total sobre el
+      # Docker daemon del host (equivalente a root en el host). Es necesario
+      # porque el servicio web orquesta las demás herramientas vía
+      # `docker compose run`. Trátalo como un servicio de confianza local.
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - UID=${UID:-1000}
       - GID=${GID:-1000}
       - HOST_STORAGE_PATH=${HOST_STORAGE_PATH:-${PWD}/storage}
       - COMPOSE_PROJECT_NAME=media-toolbox
+    command: ["uvicorn", "src.web.app:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     restart: unless-stopped
 
 

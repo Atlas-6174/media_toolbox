@@ -12,7 +12,8 @@ from src.tools.base import BaseTool
 class CalibreTool(BaseTool):
     SERVICE_NAME = "calibre"
 
-    def convert(
+    # Firma más específica que BaseTool.convert(**kwargs) a propósito: Calibre solo acepta estos parámetros.
+    def convert(  # type: ignore[override]
         self, input_file: Path, output_file: Path, paper_size: str = "a4", output_profile: Optional[str] = None
     ) -> None:
         output_file.parent.mkdir(parents=True, exist_ok=True)

@@ -27,13 +27,69 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+          pip install -e ".[dev,web]"
 
       - name: Check code formatting and linting with Ruff
         run: |
           ruff check src tests
           ruff format --check src tests
 
-      - name: Run unit tests with pytest
+      - name: Static type checking with mypy
         run: |
-          pytest tests/ -v
+          mypy src
+
+      - name: Run unit tests with pytest (with coverage)
+        run: |
+          pytest tests/ -v --cov=src --cov-report=term-missing --cov-fail-under=50
+
+      - name: Static security analysis with Bandit
+        run: |
+          bandit -c pyproject.toml -r src -ll
+
+      - name: Scan dependencies for known vulnerabilities with pip-audit
+        # No bloqueante todavía: hay vulnerabilidades conocidas en dependencias
+        # transitivas que requieren evaluar/actualizar caso por caso. Quita
+        # `continue-on-error` una vez que el backlog de hallazgos esté limpio.
+        continue-on-error: true
+        run: |
+          pip-audit
+
+  docker-scan:
+    name: Scan Docker images for vulnerabilities (Trivy)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build local images
+        run: docker compose build web tools calibre libreoffice rembg
+
+      - name: Pull pinned base images referenced in docker-compose.yml
+        run: docker compose pull ffmpeg yt-dlp
+
+      - name: Trivy scan - web image (bloqueante en CRITICAL)
+        # Invocamos la imagen oficial de Trivy pineada por versión en vez de la Action
+        # "aquasecurity/trivy-action": esa Action sufrió un compromiso de cadena de
+        # suministro en marzo de 2026 (credential stealer inyectado en los tags
+        # 0.0.1-0.34.2). La imagen aquasec/trivy:0.74.0 es posterior al incidente.
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:0.74.0 image --exit-code 1 --severity CRITICAL --scanners vuln \
+            local/toolbox-web:latest
+
+      - name: Trivy scan - resto de imágenes (informativo)
+        # No bloqueante todavía: estas imágenes (Calibre, Ghostscript, Tesseract,
+        # LibreOffice, rembg, ffmpeg, yt-dlp) acumulan CVEs de paquetes del sistema
+        # operativo / pip sin fix disponible aún upstream (confirmado con
+        # `apt-get upgrade`, que sí resolvió las 3 CRITICAL de la imagen web, y
+        # verificado que las de aquí tienen FixedVersion=None en el propio reporte
+        # de Trivy). El riesgo real está parcialmente mitigado porque estos
+        # contenedores corren con network_mode: none, sin puertos expuestos y como
+        # usuario no-root.
+        continue-on-error: true
+        run: |
+          for img in local/toolbox-tools:latest local/toolbox-calibre:latest local/toolbox-libreoffice:latest local/toolbox-rembg:latest jrottenberg/ffmpeg:9.0.1-ubuntu2404 jauderho/yt-dlp:2026.08.19; do
+            echo "== $img =="
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+              aquasec/trivy:0.74.0 image --severity CRITICAL,HIGH --scanners vuln "$img"
+          done

@@ -1,3 +1,4 @@
+import json
 import re
 
 from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn
@@ -7,6 +8,34 @@ from src.core.docker_runner import DockerRunner
 
 class DownloaderTool:
     SERVICE_NAME = "yt-dlp"
+
+    def inspect(self, url: str) -> dict:
+        """Obtiene metadatos básicos de un video para vista previa sin descargarlo."""
+        args = [url, "--no-cache-dir", "--no-warnings", "--no-playlist", "--dump-single-json"]
+        output = []
+        try:
+            for linea in DockerRunner.run_service_stream(self.SERVICE_NAME, args):
+                output.append(linea)
+            full_text = "".join(output).strip()
+            json_start = full_text.find("{")
+            json_end = full_text.rfind("}")
+            if json_start != -1 and json_end != -1:
+                data = json.loads(full_text[json_start : json_end + 1])
+                dur_str = data.get("duration_string")
+                if not dur_str and data.get("duration"):
+                    dur = int(data["duration"])
+                    dur_str = f"{dur // 60}:{dur % 60:02d}"
+                return {
+                    "title": data.get("title") or "Sin título",
+                    "thumbnail": data.get("thumbnail"),
+                    "duration": data.get("duration"),
+                    "duration_string": dur_str,
+                    "uploader": data.get("uploader") or data.get("channel"),
+                    "description": (data.get("description") or "")[:200],
+                }
+        except Exception as e:
+            return {"title": "Enlace de video", "thumbnail": None, "error": str(e)}
+        return {"title": "Enlace de video", "thumbnail": None}
 
     def descargar(
         self, url: str, solo_audio: bool = False, calidad: str = "max", permitir_playlist: bool = False

@@ -26,3 +26,7 @@ storage/input/*
 !storage/input/.gitkeep
 storage/output/*
 !storage/output/.gitkeep
+storage/logs/
+# Artefacto cosmético de telemetría de onnxruntime (usado por rembg) al no encontrar
+# un directorio de cache; escribe este archivo suelto en el cwd. Inofensivo.
+storage/:memory:.ses
