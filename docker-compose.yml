@@ -29,7 +29,7 @@ services:
     # cambian su frontend, así que esta versión necesita actualizarse con más
     # frecuencia que las demás imágenes: Dependabot abre un PR cuando sale una
     # nueva, y basta con mergearlo para quedar al día.
-    image: jauderho/yt-dlp:2026.08.19
+    image: jauderho/yt-dlp:2026.10.21
     user: "${UID:-1000}:${GID:-1000}"
     volumes:
       - ${HOST_STORAGE_PATH:-./storage}:/workspace
