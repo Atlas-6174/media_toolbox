@@ -15,7 +15,7 @@ services:
   ffmpeg:
     # Fijado a una versión concreta (en vez de ":latest") para builds reproducibles.
     # Dependabot (.github/dependabot.yml) abre un PR automático cuando hay una nueva versión.
-    image: jrottenberg/ffmpeg:9.0.1-ubuntu2404
+    image: jrottenberg/ffmpeg:9.0.2-ubuntu2404
     user: "${UID:-1000}:${GID:-1000}"
     volumes:
       - ${HOST_STORAGE_PATH:-./storage}:/workspace
